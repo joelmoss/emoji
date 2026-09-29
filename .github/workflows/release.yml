@@ -15,7 +15,7 @@ jobs:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # ponytail: ad-hoc signed and not notarized, so Gatekeeper blocks it on other Macs until
       # `xattr -cr Emoji.app`. Developer ID signing + notarization need cert/API-key secrets.
