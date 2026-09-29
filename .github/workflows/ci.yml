@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint
+        run: command -v swiftlint >/dev/null || brew install swiftlint; swiftlint lint --strict
+
+      - name: Test
+        run: swift test
+
+      # Ad-hoc signed: the Apple Development / Developer ID identities only exist on the dev's Mac.
+      - name: Build release app
+        run: SIGN_ID=- scripts/bundle.sh release

@@ -1,0 +1,29 @@
+name: Release
+
+# Push a tag like v0.1.0 to build Emoji.app and attach it to a GitHub release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ponytail: ad-hoc signed and not notarized, so Gatekeeper blocks it on other Macs until
+      # `xattr -cr Emoji.app`. Developer ID signing + notarization need cert/API-key secrets.
+      - name: Build release app
+        run: SIGN_ID=- scripts/bundle.sh release
+
+      - name: Zip
+        run: ditto -c -k --keepParent Emoji.app "Emoji-$TAG.zip"
+
+      - name: Publish
+        run: gh release create "$TAG" "Emoji-$TAG.zip" --generate-notes
