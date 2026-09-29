@@ -3,8 +3,15 @@ import KeyboardShortcuts
 import ServiceManagement
 import SwiftUI
 
+/// The dev build (`make dev`) has its own bundle id, so it keeps its own settings, recents and
+/// Accessibility grant, and can run beside the release app.
+enum Variant {
+    static let isDev = Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true
+}
+
 extension KeyboardShortcuts.Name {
-    static let toggle = Self("toggle", default: .init(.space, modifiers: [.option]))
+    // Different default so dev and release don't fight over ⌥Space.
+    static let toggle = Self("toggle", default: .init(.space, modifiers: Variant.isDev ? [.option, .shift] : [.option]))
 }
 
 struct SettingsView: View {
@@ -39,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         KeyboardShortcuts.onKeyDown(for: .toggle) { [picker] in picker.toggle() }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.title = "😀"
+        statusItem.button?.title = Variant.isDev ? "🛠️" : "😀"
         let menu = NSMenu()
         menu.delegate = self
         menu.addItem(withTitle: "Show Picker", action: #selector(showPicker), keyEquivalent: "").target = self
