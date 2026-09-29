@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     ].map { .init(.space, modifiers: $0) }
 
     private let picker = PickerController()
+    private let showPickerItem = NSMenuItem(title: "Show Picker", action: #selector(showPicker), keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Launch at Login",
                                        action: #selector(toggleLaunchAtLogin),
                                        keyEquivalent: "")
@@ -50,12 +51,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.title = Variant.isDev ? "🛠️" : "😀"
         statusItem.menu = makeMenu()
+        picker.menu = statusItem.menu
     }
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
         menu.delegate = self
-        menu.addItem(withTitle: "Show Picker", action: #selector(showPicker), keyEquivalent: "").target = self
+        showPickerItem.target = self
+        menu.addItem(showPickerItem)
 
         for (tone, name) in SkinTone.names.enumerated() {
             let item = NSMenuItem(title: "\(SkinTone.sample(tone)) \(name)",
@@ -86,6 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func menuNeedsUpdate(_: NSMenu) {
+        showPickerItem.isHidden = picker.isVisible  // this menu is also the picker's gear menu
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         for item in skinMenu.items { item.state = item.tag == SkinTone.current ? .on : .off }
 

@@ -20,11 +20,14 @@ final class PickerPanel: NSPanel {
     // Borderless panels refuse key status by default; search field needs it to take typing.
     override var canBecomeKey: Bool { true }
 
+    /// Set while the settings menu is open, so losing key status to the menu doesn't close the panel.
+    var keepOpenOnResignKey = false
+
     // Click-away close. Non-activating means the app never becomes active,
     // so hidesOnDeactivate / applicationDidResignActive would never fire.
     override func resignKey() {
         super.resignKey()
-        orderOut(nil)
+        if !keepOpenOnResignKey { orderOut(nil) }
     }
 }
 
@@ -46,6 +49,7 @@ final class PickerModel {
     private(set) var sections: [EmojiGroup] = []
     var onPick: (Emoji) -> Void = { _ in }
     var onDismiss: () -> Void = {}
+    var onSettings: () -> Void = {}
 
     /// Pass `sections` to pin the layout (tests); default builds it from recents + all groups.
     init(sections: [EmojiGroup]? = nil) {
@@ -164,20 +168,30 @@ struct PickerView: View {
     }
 
     private var searchBar: some View {
-        TextField("Search emoji", text: $model.query)
-            .textFieldStyle(.plain)
-            .font(.title3)
-            .focused($focused)
-            .onSubmit { pick() }
-            .onKeyPress(.upArrow) { model.moveVertically(by: -1); return .handled }
-            .onKeyPress(.downArrow) { model.moveVertically(by: 1); return .handled }
-            .onKeyPress(.leftArrow) { model.moveHorizontally(by: -1); return .handled }
-            .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
-            .onKeyPress(.escape) { model.onDismiss(); return .handled }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .modifier(GlassCapsule())
-            .padding([.horizontal, .top], 10)
+        HStack(spacing: 8) {
+            TextField("Search emoji", text: $model.query)
+                .textFieldStyle(.plain)
+                .font(.title3)
+                .focused($focused)
+                .onSubmit { pick() }
+                .onKeyPress(.upArrow) { model.moveVertically(by: -1); return .handled }
+                .onKeyPress(.downArrow) { model.moveVertically(by: 1); return .handled }
+                .onKeyPress(.leftArrow) { model.moveHorizontally(by: -1); return .handled }
+                .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
+                .onKeyPress(.escape) { model.onDismiss(); return .handled }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .modifier(GlassCapsule())
+            Button { model.onSettings() } label: {
+                Image(systemName: "gearshape")
+                    .frame(width: 40, height: 40)
+                    .modifier(GlassCapsule())
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
+        }
+        .padding([.horizontal, .top], 10)
     }
 
     /// The grid fills the panel and scrolls under the floating search bar and footer.
@@ -267,6 +281,10 @@ struct PickerView: View {
 final class PickerController {
     private let model = PickerModel()
     private let panel: PickerPanel
+    /// The menu-bar menu, shared so the picker's settings (gear) button shows the same one.
+    var menu: NSMenu?
+
+    var isVisible: Bool { panel.isVisible }
 
     init() {
         panel = PickerPanel(content: NSHostingView(rootView: PickerView(model: model)))
@@ -276,6 +294,23 @@ final class PickerController {
             Paste.insert(emoji.char(tone: model.tone))
         }
         model.onDismiss = { [unowned self] in hide() }
+        model.onSettings = { [unowned self] in showMenu() }
+    }
+
+    private func showMenu() {
+        guard let menu else { return }
+        panel.keepOpenOnResignKey = true
+        // popUp blocks until the menu closes; the chosen item's action has run by then.
+        menu.popUp(positioning: nil,
+                   at: panel.contentView?.convert(panel.mouseLocationOutsideOfEventStream, from: nil) ?? .zero,
+                   in: panel.contentView)
+        panel.keepOpenOnResignKey = false
+        model.tone = SkinTone.current  // skin tone may have just changed
+        if let other = NSApp.keyWindow, other !== panel {
+            hide()  // e.g. "Custom…" opened the recorder window
+        } else {
+            panel.makeKeyAndOrderFront(nil)
+        }
     }
 
     func toggle() {
