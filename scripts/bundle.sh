@@ -21,6 +21,20 @@ case "$1" in
 esac
 [ "${NOTARIZE:-}" != 1 ] || [ "$1" = release ] || { echo "NOTARIZE=1 only applies to release" >&2; exit 1; }
 
+# Sparkle updates are release-only: the dev build must never try to replace itself with the release app.
+# The public key is generated once with Sparkle's generate_keys (see README).
+SPARKLE_KEYS=""
+if [ "$1" = release ]; then
+  PUBKEY=$(cat scripts/sparkle_public_key.txt 2>/dev/null || true)
+  if [ -n "$PUBKEY" ]; then
+    SPARKLE_KEYS="<key>SUFeedURL</key><string>https://github.com/joelmoss/emoji/releases/latest/download/appcast.xml</string>
+  <key>SUPublicEDKey</key><string>$PUBKEY</string>"
+  elif [ "${NOTARIZE:-}" = 1 ]; then
+    echo "scripts/sparkle_public_key.txt is missing: run generate_keys first (see README)" >&2
+    exit 1
+  fi
+fi
+
 swift build -c "$CONFIG" --disable-sandbox
 BIN=$(swift build -c "$CONFIG" --show-bin-path)
 
@@ -32,6 +46,14 @@ cp Sources/Emoji/emojis.json "$APP/Contents/Resources/"
 # SwiftPM's Bundle.module looks in Contents/Resources first. Not the .app root: codesign rejects that.
 # KeyboardShortcuts' Recorder needs its bundle.
 cp -R "$BIN/KeyboardShortcuts_KeyboardShortcuts.bundle" "$APP/Contents/Resources/"
+
+SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+mkdir -p "$APP/Contents/Frameworks"
+ditto "$BIN/Sparkle.framework" "$SPARKLE"
+# Not sandboxed, so Sparkle's XPC services are optional; dropping them leaves less to sign and notarize.
+rm -rf "$SPARKLE/XPCServices" "$SPARKLE/Versions/B/XPCServices"
+# SwiftPM only sets @loader_path as the rpath; the framework lives in Contents/Frameworks.
+install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/$NAME"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -45,11 +67,15 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundleVersion</key><string>$BUILD</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  $SPARKLE_KEYS
 </dict></plist>
 EOF
 
-# shellcheck disable=SC2086 # FLAGS is deliberately word-split
-codesign --force --sign "$SIGN" $FLAGS "$APP"
+# Inside out: notarization rejects nested code that isn't signed with the same identity and runtime.
+for item in "$SPARKLE/Versions/B/Autoupdate" "$SPARKLE/Versions/B/Updater.app" "$SPARKLE" "$APP"; do
+  # shellcheck disable=SC2086 # FLAGS is deliberately word-split
+  codesign --force --sign "$SIGN" $FLAGS "$item"
+done
 
 if [ "${NOTARIZE:-}" = 1 ]; then
   WORK=$(mktemp -d)

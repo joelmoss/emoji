@@ -1,12 +1,15 @@
 import AppKit
 import KeyboardShortcuts
 import ServiceManagement
+import Sparkle
 import SwiftUI
 
 /// The dev build (`make dev`) has its own bundle id, so it keeps its own settings, recents and
 /// Accessibility grant, and can run beside the release app.
 enum Variant {
     static let isDev = Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true
+    /// Only release builds carry a feed URL and public key (scripts/bundle.sh); without them Sparkle stays off.
+    static let updatesEnabled = !isDev && Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") != nil
 }
 
 extension KeyboardShortcuts.Name {
@@ -30,6 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     ].map { .init(.space, modifiers: $0) }
 
     private let picker = PickerController()
+    private let updater = SPUStandardUpdaterController(startingUpdater: Variant.updatesEnabled,
+                                                       updaterDelegate: nil,
+                                                       userDriverDelegate: nil)
     private let showPickerItem = NSMenuItem(title: "Show Picker", action: #selector(showPicker), keyEquivalent: "")
     private static let hideIconKey = "hideMenuBarIcon"
     private static let iconKey = "menuBarIcon"
@@ -115,6 +121,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(.separator())
+        if Variant.updatesEnabled {
+            menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+                .target = self
+        }
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
     }
@@ -187,6 +197,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             NSAlert(error: error).runModal()
         }
+    }
+
+    @objc private func checkForUpdates() {
+        // Same cooperative-activation trap as the shortcut window: without this Sparkle's window opens behind.
+        NSApp.activate(ignoringOtherApps: true)
+        updater.checkForUpdates(nil)
     }
 
     @objc private func showPicker() { picker.show() }
