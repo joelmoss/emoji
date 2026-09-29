@@ -32,6 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let picker = PickerController()
     private let showPickerItem = NSMenuItem(title: "Show Picker", action: #selector(showPicker), keyEquivalent: "")
     private static let hideIconKey = "hideMenuBarIcon"
+    private static let iconKey = "menuBarIcon"
+    /// Menu-bar icon choices; a nil symbol means the 😀 emoji. Symbols are template images.
+    private static let icons: [(name: String, symbol: String?)] = [
+        ("Emoji", nil), ("Smiley", "face.smiling"), ("Solid Smiley", "smiley.fill"),
+        ("Dashed Face", "face.dashed"), ("Keyboard", "keyboard"), ("Speech Bubble", "character.bubble")
+    ]
 
     private let statusIconItem = NSMenuItem(title: "Show Menu Bar Icon",
                                             action: #selector(toggleStatusIcon),
@@ -43,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                 action: #selector(showShortcutRecorder),
                                                 keyEquivalent: "")
     private let skinMenu = NSMenu()
+    private let iconMenu = NSMenu()
     private let shortcutMenu = NSMenu()
     private var statusItem: NSStatusItem!
     private var recorderWindow: NSWindow?
@@ -54,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         KeyboardShortcuts.onKeyDown(for: .toggle) { [picker] in picker.toggle() }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.title = Variant.isDev ? "🛠️" : "😀"
+        applyIcon()
         statusItem.menu = makeMenu()
         statusItem.isVisible = !UserDefaults.standard.bool(forKey: Self.hideIconKey)
         picker.menu = statusItem.menu
@@ -82,6 +89,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(withTitle: "Skin Tone", action: nil, keyEquivalent: "").submenu = skinMenu
 
+        for (index, icon) in Self.icons.enumerated() {
+            let item = NSMenuItem(title: icon.name, action: #selector(selectIcon), keyEquivalent: "")
+            item.tag = index
+            item.target = self
+            item.image = icon.symbol.flatMap(Self.symbolImage)
+            iconMenu.addItem(item)
+        }
+        menu.addItem(withTitle: "Icon", action: nil, keyEquivalent: "").submenu = iconMenu
+
         for preset in Self.shortcutPresets {
             let item = NSMenuItem(title: "\(preset)", action: #selector(selectShortcut), keyEquivalent: "")
             item.representedObject = preset
@@ -108,6 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusIconItem.state = statusItem.isVisible ? .on : .off
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         for item in skinMenu.items { item.state = item.tag == SkinTone.current ? .on : .off }
+        for item in iconMenu.items { item.state = item.tag == selectedIcon ? .on : .off }
 
         let current = KeyboardShortcuts.getShortcut(for: .toggle)
         for item in shortcutMenu.items {
@@ -119,6 +136,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let custom = current.flatMap { Self.shortcutPresets.contains($0) ? nil : $0 }
         customShortcutItem.title = custom.map { "Custom (\($0))…" } ?? "Custom…"
         customShortcutItem.state = custom == nil ? .off : .on
+    }
+
+    private var selectedIcon: Int {
+        let index = UserDefaults.standard.integer(forKey: Self.iconKey)
+        return Self.icons.indices.contains(index) ? index : 0
+    }
+
+    private static func symbolImage(_ name: String) -> NSImage? {
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: "Emoji picker")
+        image?.isTemplate = true
+        return image
+    }
+
+    /// The dev build adds 🛠️ next to whichever icon is chosen, to tell it apart from release.
+    private func applyIcon() {
+        guard let button = statusItem.button else { return }
+        let symbol = Self.icons[selectedIcon].symbol
+        button.image = symbol.flatMap(Self.symbolImage)
+        button.imagePosition = .imageLeading
+        button.title = (button.image == nil ? "😀" : "") + (Variant.isDev ? "🛠️" : "")
+    }
+
+    @objc private func selectIcon(_ item: NSMenuItem) {
+        UserDefaults.standard.set(item.tag, forKey: Self.iconKey)
+        applyIcon()
     }
 
     @objc private func selectSkinTone(_ item: NSMenuItem) {
