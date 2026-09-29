@@ -13,5 +13,6 @@ let package = Package(
             dependencies: ["KeyboardShortcuts"],
             resources: [.copy("emojis.json")]
         ),
+        .testTarget(name: "EmojiTests", dependencies: ["Emoji"]),
     ]
 )

@@ -42,11 +42,15 @@ final class PickerModel {
     var query = ""
     var pos = Pos()
     var focusToken = 0
+    var tone = 0
     private(set) var sections: [EmojiGroup] = []
     var onPick: (Emoji) -> Void = { _ in }
     var onDismiss: () -> Void = {}
 
-    init() { refresh() }
+    /// Pass `sections` to pin the layout (tests); default builds it from recents + all groups.
+    init(sections: [EmojiGroup]? = nil) {
+        if let sections { self.sections = sections } else { refresh() }
+    }
 
     var selected: Emoji? {
         guard sections.indices.contains(pos.section),
@@ -56,6 +60,7 @@ final class PickerModel {
 
     func refresh() {
         pos = Pos()
+        tone = SkinTone.current
         if query.isEmpty {
             let recent = Recents.list.compactMap { EmojiStore.byChar[$0] }
             sections = (recent.isEmpty ? [] : [EmojiGroup(name: "Recently Used", emojis: recent)]) + EmojiStore.groups
@@ -168,7 +173,7 @@ struct PickerView: View {
     }
 
     private func cell(_ emoji: Emoji, at position: Pos) -> some View {
-        Text(emoji.char)
+        Text(emoji.char(tone: model.tone))
             .font(.system(size: 26))
             .frame(width: Self.cell, height: Self.cell)
             .background(model.pos == position ? Color.accentColor.opacity(0.35) : .clear,
@@ -195,8 +200,8 @@ final class PickerController {
         panel = PickerPanel(content: NSHostingView(rootView: PickerView(model: model)))
         model.onPick = { [unowned self] emoji in
             hide()
-            Recents.add(emoji.char)
-            Paste.insert(emoji.char)
+            Recents.add(emoji.char)  // base char: recents follow the current skin tone
+            Paste.insert(emoji.char(tone: model.tone))
         }
         model.onDismiss = { [unowned self] in hide() }
     }

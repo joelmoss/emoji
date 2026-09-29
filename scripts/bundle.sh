@@ -1,5 +1,6 @@
 #!/bin/sh
 # Builds Emoji.app (menu-bar app, no Dock icon). Run from repo root.
+# SIGN_ID overrides the signing identity; SIGN_ID=- signs ad-hoc (Accessibility then resets on every rebuild).
 set -e
 swift build -c release --disable-sandbox
 BIN=$(swift build -c release --show-bin-path)
@@ -9,8 +10,9 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Emoji" "$APP/Contents/MacOS/"
 cp Sources/Emoji/emojis.json "$APP/Contents/Resources/"
-# SwiftPM's Bundle.module accessor looks in the .app root, not Resources.
-cp -R "$BIN/KeyboardShortcuts_KeyboardShortcuts.bundle" "$APP/"
+# Release builds look for resource bundles in Contents/Resources (debug builds use the .app root,
+# which codesign rejects, so only release-built apps work). KeyboardShortcuts' Recorder needs its bundle.
+cp -R "$BIN/KeyboardShortcuts_KeyboardShortcuts.bundle" "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -26,5 +28,5 @@ cat > "$APP/Contents/Info.plist" <<EOF
 </dict></plist>
 EOF
 
-# No codesign: it rejects the bundle at the .app root. The linker already ad-hoc signed the binary.
-echo "Built $APP. Grant it Accessibility (re-grant after each rebuild: identity is the binary hash) in System Settings > Privacy & Security."
+codesign --force --sign "${SIGN_ID:-Apple Development: Joel Moss (K7JL9AWZ26)}" "$APP"
+echo "Built $APP, signed. Grant Accessibility once (System Settings > Privacy & Security); it persists across rebuilds."
