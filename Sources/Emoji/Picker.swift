@@ -31,8 +31,8 @@ final class PickerPanel: NSPanel {
 // MARK: - Model
 
 struct Pos: Hashable {
-    var s = 0
-    var i = 0
+    var section = 0
+    var index = 0
 }
 
 @Observable
@@ -42,60 +42,66 @@ final class PickerModel {
     var query = ""
     var pos = Pos()
     var focusToken = 0
-    private(set) var sections: [Group] = []
+    private(set) var sections: [EmojiGroup] = []
     var onPick: (Emoji) -> Void = { _ in }
     var onDismiss: () -> Void = {}
 
     init() { refresh() }
 
     var selected: Emoji? {
-        guard sections.indices.contains(pos.s), sections[pos.s].emojis.indices.contains(pos.i) else { return nil }
-        return sections[pos.s].emojis[pos.i]
+        guard sections.indices.contains(pos.section),
+              sections[pos.section].emojis.indices.contains(pos.index) else { return nil }
+        return sections[pos.section].emojis[pos.index]
     }
 
     func refresh() {
         pos = Pos()
         if query.isEmpty {
             let recent = Recents.list.compactMap { EmojiStore.byChar[$0] }
-            sections = (recent.isEmpty ? [] : [Group(name: "Recently Used", emojis: recent)]) + EmojiStore.groups
+            sections = (recent.isEmpty ? [] : [EmojiGroup(name: "Recently Used", emojis: recent)]) + EmojiStore.groups
         } else {
-            sections = [Group(name: "Results", emojis: EmojiStore.search(query))]
+            sections = [EmojiGroup(name: "Results", emojis: EmojiStore.search(query))]
         }
     }
 
-    /// Grid navigation across sections. Up/down keep the column; partial last rows clamp.
-    func move(dx: Int, dy: Int) {
+    /// Left/right walk the flat list, spilling into the adjacent section.
+    func moveHorizontally(by delta: Int) {
+        guard count(pos.section) > 0 else { return }
+        var section = pos.section
+        var index = pos.index + delta
+        if index < 0 {
+            if section > 0 { section -= 1; index = count(section) - 1 } else { index = 0 }
+        } else if index >= count(section) {
+            if section < sections.count - 1 { section += 1; index = 0 } else { index = count(section) - 1 }
+        }
+        pos = Pos(section: section, index: index)
+    }
+
+    /// Up/down keep the column; partial last rows clamp.
+    func moveVertically(by delta: Int) {
+        guard count(pos.section) > 0 else { return }
         let cols = Self.cols
-        func count(_ s: Int) -> Int { sections[s].emojis.count }
-        guard count(pos.s) > 0 else { return }
-        var s = pos.s, i = pos.i
-
-        if dx != 0 {
-            i += dx
-            if i < 0 {
-                if s > 0 { s -= 1; i = count(s) - 1 } else { i = 0 }
-            } else if i >= count(s) {
-                if s < sections.count - 1 { s += 1; i = 0 } else { i = count(s) - 1 }
-            }
-        } else {
-            let col = i % cols
-            i += dy * cols
-            if i < 0 {
-                if s > 0 {
-                    s -= 1
-                    i = min((count(s) - 1) / cols * cols + col, count(s) - 1)
-                } else { i = pos.i }
-            } else if i >= count(s) {
-                if pos.i / cols < (count(s) - 1) / cols {
-                    i = count(s) - 1
-                } else if s < sections.count - 1 {
-                    s += 1
-                    i = min(col, count(s) - 1)
-                } else { i = pos.i }
+        let col = pos.index % cols
+        var section = pos.section
+        var index = pos.index + delta * cols
+        if index < 0 {
+            guard section > 0 else { return }
+            section -= 1
+            index = min((count(section) - 1) / cols * cols + col, count(section) - 1)
+        } else if index >= count(section) {
+            if pos.index / cols < (count(section) - 1) / cols {
+                index = count(section) - 1
+            } else if section < sections.count - 1 {
+                section += 1
+                index = min(col, count(section) - 1)
+            } else {
+                return
             }
         }
-        pos = Pos(s: s, i: i)
+        pos = Pos(section: section, index: index)
     }
+
+    private func count(_ section: Int) -> Int { sections[section].emojis.count }
 }
 
 // MARK: - View
@@ -104,6 +110,7 @@ struct PickerView: View {
     static let cell: CGFloat = 40
     static let width = CGFloat(PickerModel.cols) * cell + 24
     static let height: CGFloat = 460
+    private static let columns = Array(repeating: GridItem(.fixed(cell), spacing: 0), count: PickerModel.cols)
 
     @Bindable var model: PickerModel
     @FocusState private var focused: Bool
@@ -116,10 +123,10 @@ struct PickerView: View {
                 .padding(12)
                 .focused($focused)
                 .onSubmit { pick() }
-                .onKeyPress(.upArrow) { model.move(dx: 0, dy: -1); return .handled }
-                .onKeyPress(.downArrow) { model.move(dx: 0, dy: 1); return .handled }
-                .onKeyPress(.leftArrow) { model.move(dx: -1, dy: 0); return .handled }
-                .onKeyPress(.rightArrow) { model.move(dx: 1, dy: 0); return .handled }
+                .onKeyPress(.upArrow) { model.moveVertically(by: -1); return .handled }
+                .onKeyPress(.downArrow) { model.moveVertically(by: 1); return .handled }
+                .onKeyPress(.leftArrow) { model.moveHorizontally(by: -1); return .handled }
+                .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
                 .onKeyPress(.escape) { model.onDismiss(); return .handled }
             Divider()
             grid
@@ -137,7 +144,7 @@ struct PickerView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(model.sections.enumerated()), id: \.offset) { s, group in
+                    ForEach(Array(model.sections.enumerated()), id: \.offset) { section, group in
                         Text(group.name)
                             .font(.caption.bold())
                             .foregroundStyle(.secondary)
@@ -146,19 +153,9 @@ struct PickerView: View {
                         if group.emojis.isEmpty {
                             Text("No results").foregroundStyle(.secondary).padding(12)
                         }
-                        LazyVGrid(columns: Array(repeating: GridItem(.fixed(Self.cell), spacing: 0), count: PickerModel.cols),
-                                  spacing: 0) {
-                            ForEach(Array(group.emojis.enumerated()), id: \.offset) { i, emoji in
-                                let p = Pos(s: s, i: i)
-                                Text(emoji.char)
-                                    .font(.system(size: 26))
-                                    .frame(width: Self.cell, height: Self.cell)
-                                    .background(model.pos == p ? Color.accentColor.opacity(0.35) : .clear,
-                                                in: RoundedRectangle(cornerRadius: 8))
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { model.pos = p; pick() }
-                                    .help(emoji.name)
-                                    .id(p)
+                        LazyVGrid(columns: Self.columns, spacing: 0) {
+                            ForEach(Array(group.emojis.enumerated()), id: \.offset) { index, emoji in
+                                cell(emoji, at: Pos(section: section, index: index))
                             }
                         }
                         .padding(.horizontal, 12)
@@ -166,12 +163,24 @@ struct PickerView: View {
                 }
             }
             .scrollIndicators(.hidden)
-            .onChange(of: model.pos) { _, p in proxy.scrollTo(p) }
+            .onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
         }
     }
 
+    private func cell(_ emoji: Emoji, at position: Pos) -> some View {
+        Text(emoji.char)
+            .font(.system(size: 26))
+            .frame(width: Self.cell, height: Self.cell)
+            .background(model.pos == position ? Color.accentColor.opacity(0.35) : .clear,
+                        in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
+            .onTapGesture { model.pos = position; pick() }
+            .help(emoji.name)
+            .id(position)
+    }
+
     private func pick() {
-        if let e = model.selected { model.onPick(e) }
+        if let emoji = model.selected { model.onPick(emoji) }
     }
 }
 
@@ -192,7 +201,9 @@ final class PickerController {
         model.onDismiss = { [unowned self] in hide() }
     }
 
-    func toggle() { panel.isVisible ? hide() : show() }
+    func toggle() {
+        if panel.isVisible { hide() } else { show() }
+    }
 
     func show() {
         model.query = ""
@@ -200,9 +211,9 @@ final class PickerController {
         model.focusToken += 1
 
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main!
-        let f = screen.visibleFrame
-        panel.setFrameOrigin(NSPoint(x: f.midX - panel.frame.width / 2,
-                                     y: f.midY - panel.frame.height / 2 + f.height * 0.1))
+        let frame = screen.visibleFrame
+        panel.setFrameOrigin(NSPoint(x: frame.midX - panel.frame.width / 2,
+                                     y: frame.midY - panel.frame.height / 2 + frame.height * 0.1))
         panel.makeKeyAndOrderFront(nil)
     }
 

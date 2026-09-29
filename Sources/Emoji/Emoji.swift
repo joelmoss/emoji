@@ -7,17 +7,21 @@ struct Emoji: Decodable {
     enum CodingKeys: String, CodingKey { case char = "c", name = "n" }
 }
 
-struct Group: Decodable {
+struct EmojiGroup: Decodable {
     let name: String
     let emojis: [Emoji]
 }
 
 enum EmojiStore {
-    static let groups: [Group] = {
+    static let groups: [EmojiGroup] = {
         // Bundle.main: .app build (bundle.sh). Bundle.module: `swift run`.
         let url = Bundle.main.url(forResource: "emojis", withExtension: "json")
             ?? Bundle.module.url(forResource: "emojis", withExtension: "json")!
-        return try! JSONDecoder().decode([Group].self, from: Data(contentsOf: url))
+        do {
+            return try JSONDecoder().decode([EmojiGroup].self, from: Data(contentsOf: url))
+        } catch {
+            fatalError("Cannot load emojis.json: \(error)")
+        }
     }()
 
     static let all = groups.flatMap(\.emojis)
@@ -25,7 +29,7 @@ enum EmojiStore {
 
     static func search(_ query: String) -> [Emoji] {
         let words = query.lowercased().split(separator: " ")
-        return all.filter { e in words.allSatisfy { e.name.contains($0) } }
+        return all.filter { emoji in words.allSatisfy { emoji.name.contains($0) } }
     }
 }
 

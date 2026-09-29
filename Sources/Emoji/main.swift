@@ -31,12 +31,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettings() {
         if settings == nil {
-            let w = NSWindow(contentViewController: NSHostingController(rootView:
+            let window = NSWindow(contentViewController: NSHostingController(rootView:
                 Form { KeyboardShortcuts.Recorder("Shortcut:", name: .toggle) }.padding(20)))
-            w.title = "Emoji Settings"
-            w.styleMask = [.titled, .closable]
-            w.isReleasedWhenClosed = false
-            settings = w
+            window.title = "Emoji Settings"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            settings = window
         }
         NSApp.activate()
         settings?.center()
