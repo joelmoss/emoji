@@ -14,30 +14,32 @@ extension KeyboardShortcuts.Name {
     static let toggle = Self("toggle", default: .init(.space, modifiers: Variant.isDev ? [.option, .shift] : [.option]))
 }
 
-struct SettingsView: View {
-    @AppStorage(SkinTone.key) private var skinTone = 0
-
+/// The recorder needs a real window: a menu's tracking loop swallows the keystrokes it records.
+struct ShortcutRecorderView: View {
     var body: some View {
-        Form {
-            KeyboardShortcuts.Recorder("Shortcut:", name: .toggle)
-            Picker("Skin tone:", selection: $skinTone) {
-                ForEach(SkinTone.names.indices, id: \.self) { tone in
-                    Text("\(SkinTone.sample(tone)) \(SkinTone.names[tone])").tag(tone)
-                }
-            }
-        }
-        .padding(20)
-        .frame(width: 320)
+        Form { KeyboardShortcuts.Recorder("Shortcut:", name: .toggle) }
+            .padding(20)
+            .frame(width: 320)
     }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    /// Menu presets. ⌘Space, ⌃Space and ⌘⌥Space are taken by macOS itself.
+    private static let shortcutPresets: [KeyboardShortcuts.Shortcut] = [
+        [.option], [.option, .shift], [.control, .option], [.command, .shift], [.control, .shift]
+    ].map { .init(.space, modifiers: $0) }
+
     private let picker = PickerController()
     private let loginItem = NSMenuItem(title: "Launch at Login",
                                        action: #selector(toggleLaunchAtLogin),
                                        keyEquivalent: "")
+    private let customShortcutItem = NSMenuItem(title: "Custom…",
+                                                action: #selector(showShortcutRecorder),
+                                                keyEquivalent: "")
+    private let skinMenu = NSMenu()
+    private let shortcutMenu = NSMenu()
     private var statusItem: NSStatusItem!
-    private var settings: NSWindow?
+    private var recorderWindow: NSWindow?
 
     func applicationDidFinishLaunching(_: Notification) {
         // Accessibility is required to post ⌘V into other apps. Prompts once.
@@ -47,19 +49,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.title = Variant.isDev ? "🛠️" : "😀"
+        statusItem.menu = makeMenu()
+    }
+
+    private func makeMenu() -> NSMenu {
         let menu = NSMenu()
         menu.delegate = self
         menu.addItem(withTitle: "Show Picker", action: #selector(showPicker), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
+
+        for (tone, name) in SkinTone.names.enumerated() {
+            let item = NSMenuItem(title: "\(SkinTone.sample(tone)) \(name)",
+                                  action: #selector(selectSkinTone), keyEquivalent: "")
+            item.tag = tone
+            item.target = self
+            skinMenu.addItem(item)
+        }
+        menu.addItem(withTitle: "Skin Tone", action: nil, keyEquivalent: "").submenu = skinMenu
+
+        for preset in Self.shortcutPresets {
+            let item = NSMenuItem(title: "\(preset)", action: #selector(selectShortcut), keyEquivalent: "")
+            item.representedObject = preset
+            item.target = self
+            shortcutMenu.addItem(item)
+        }
+        shortcutMenu.addItem(.separator())
+        customShortcutItem.target = self
+        shortcutMenu.addItem(customShortcutItem)
+        shortcutMenu.addItem(withTitle: "Clear", action: #selector(clearShortcut), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Shortcut", action: nil, keyEquivalent: "").submenu = shortcutMenu
+
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        statusItem.menu = menu
+        return menu
     }
 
     func menuNeedsUpdate(_: NSMenu) {
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        for item in skinMenu.items { item.state = item.tag == SkinTone.current ? .on : .off }
+
+        let current = KeyboardShortcuts.getShortcut(for: .toggle)
+        for item in shortcutMenu.items {
+            if let preset = item.representedObject as? KeyboardShortcuts.Shortcut {
+                item.state = preset == current ? .on : .off
+            }
+        }
+        // A recorded shortcut that isn't a preset shows as "Custom…" with its keys.
+        let custom = current.flatMap { Self.shortcutPresets.contains($0) ? nil : $0 }
+        customShortcutItem.title = custom.map { "Custom (\($0))…" } ?? "Custom…"
+        customShortcutItem.state = custom == nil ? .off : .on
+    }
+
+    @objc private func selectSkinTone(_ item: NSMenuItem) {
+        UserDefaults.standard.set(item.tag, forKey: SkinTone.key)
+    }
+
+    @objc private func selectShortcut(_ item: NSMenuItem) {
+        KeyboardShortcuts.setShortcut(item.representedObject as? KeyboardShortcuts.Shortcut, for: .toggle)
+    }
+
+    @objc private func clearShortcut() {
+        KeyboardShortcuts.setShortcut(nil, for: .toggle)
     }
 
     @objc private func toggleLaunchAtLogin() {
@@ -73,19 +124,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func showPicker() { picker.show() }
 
-    @objc private func showSettings() {
-        if settings == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView()))
-            window.title = "Emoji Settings"
+    @objc private func showShortcutRecorder() {
+        if recorderWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: ShortcutRecorderView()))
+            window.title = "Emoji Shortcut"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
-            settings = window
+            recorderWindow = window
         }
         // Not plain activate(): on macOS 14+ it's cooperative and is declined while another app is
         // frontmost, so the window never becomes key and the recorder never sees keystrokes.
         NSApp.activate(ignoringOtherApps: true)
-        settings?.center()
-        settings?.makeKeyAndOrderFront(nil)
+        recorderWindow?.center()
+        recorderWindow?.makeKeyAndOrderFront(nil)
     }
 }
 
