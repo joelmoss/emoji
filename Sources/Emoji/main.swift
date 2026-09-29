@@ -81,7 +81,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             window.isReleasedWhenClosed = false
             settings = window
         }
-        NSApp.activate()
+        // Not plain activate(): on macOS 14+ it's cooperative and is declined while another app is
+        // frontmost, so the window never becomes key and the recorder never sees keystrokes.
+        NSApp.activate(ignoringOtherApps: true)
         settings?.center()
         settings?.makeKeyAndOrderFront(nil)
     }
