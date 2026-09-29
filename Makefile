@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev release lint test
+.PHONY: help dev release notarize lint test
 
 help: ## Show this help
 	@awk -F':.*## ' '/^[a-z-]+:.*## / {printf "  make %-8s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -12,6 +12,9 @@ dev: ## Build and relaunch "Emoji Dev.app" (debug, own bundle id and settings)
 
 release: ## Build the signed release "Emoji.app"
 	scripts/bundle.sh release
+
+notarize: ## Build, notarize and staple Emoji.app (needs the "emoji" notarytool profile)
+	NOTARIZE=1 scripts/bundle.sh release
 
 lint: ## Run SwiftLint (strict)
 	swiftlint lint --strict
