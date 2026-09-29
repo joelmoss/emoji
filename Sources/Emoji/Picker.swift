@@ -116,6 +116,13 @@ struct PickerView: View {
     static let width = CGFloat(PickerModel.cols) * cell + 24
     static let height: CGFloat = 460
     private static let columns = Array(repeating: GridItem(.fixed(cell), spacing: 0), count: PickerModel.cols)
+    /// Scroll id of a section header: same `Pos` type as the cells, at an index no cell uses.
+    private static let headerIndex = -1
+    private static let icons = [
+        "Recently Used": "🕘", "Smileys & Emotion": "😀", "People & Body": "👋", "Animals & Nature": "🐻",
+        "Food & Drink": "🍔", "Travel & Places": "✈️", "Activities": "⚽️", "Objects": "💡",
+        "Symbols": "🔣", "Flags": "🏁"
+    ]
 
     @Bindable var model: PickerModel
     @FocusState private var focused: Bool
@@ -134,7 +141,7 @@ struct PickerView: View {
                 .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
                 .onKeyPress(.escape) { model.onDismiss(); return .handled }
             Divider()
-            grid
+            scrollArea
         }
         .frame(width: Self.width, height: Self.height)
         .background(.regularMaterial)
@@ -145,31 +152,64 @@ struct PickerView: View {
         .onChange(of: model.query) { model.refresh() }
     }
 
-    private var grid: some View {
+    private var scrollArea: some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(model.sections.enumerated()), id: \.offset) { section, group in
-                        Text(group.name)
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                        if group.emojis.isEmpty {
-                            Text("No results").foregroundStyle(.secondary).padding(12)
-                        }
-                        LazyVGrid(columns: Self.columns, spacing: 0) {
-                            ForEach(Array(group.emojis.enumerated()), id: \.offset) { index, emoji in
-                                cell(emoji, at: Pos(section: section, index: index))
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                    }
+            VStack(spacing: 0) {
+                grid.onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
+                if model.query.isEmpty {  // search results are one flat section: nothing to jump between
+                    Divider()
+                    footer(proxy)
                 }
             }
-            .scrollIndicators(.hidden)
-            .onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
         }
+    }
+
+    private var grid: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(model.sections.enumerated()), id: \.offset) { section, group in
+                    Text(group.name)
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .id(Pos(section: section, index: Self.headerIndex))
+                    if group.emojis.isEmpty {
+                        Text("No results").foregroundStyle(.secondary).padding(12)
+                    }
+                    LazyVGrid(columns: Self.columns, spacing: 0) {
+                        ForEach(Array(group.emojis.enumerated()), id: \.offset) { index, emoji in
+                            cell(emoji, at: Pos(section: section, index: index))
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    /// One button per section. Clicking scrolls its header to the top and moves the selection there.
+    private func footer(_ proxy: ScrollViewProxy) -> some View {
+        HStack(spacing: 0) {
+            ForEach(Array(model.sections.enumerated()), id: \.offset) { section, group in
+                Button {
+                    model.pos = Pos(section: section, index: 0)
+                    proxy.scrollTo(Pos(section: section, index: Self.headerIndex), anchor: .top)
+                    focused = true
+                } label: {
+                    Text(Self.icons[group.name] ?? group.emojis.first?.char ?? "•")
+                        .font(.system(size: 16))
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .background(model.pos.section == section ? Color.accentColor.opacity(0.35) : .clear,
+                                    in: RoundedRectangle(cornerRadius: 6))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(group.name)
+            }
+        }
+        .padding(.horizontal, 6)
     }
 
     private func cell(_ emoji: Emoji, at position: Pos) -> some View {
