@@ -111,10 +111,37 @@ final class PickerModel {
 
 // MARK: - View
 
+/// Blurred backdrop with macOS 26's rounder corners. Glass is not stacked here: the search bar and
+/// footer float on it as glass, and the grid scrolls underneath them.
+private struct PanelBackground: ViewModifier {
+    private static let radius: CGFloat = {
+        if #available(macOS 26, *) { return 20 }
+        return 12
+    }()
+
+    func body(content: Content) -> some View {
+        content
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: Self.radius))
+            .overlay(RoundedRectangle(cornerRadius: Self.radius).strokeBorder(.separator))
+    }
+}
+
+/// Liquid Glass capsule on macOS 26+, a thin material capsule before that.
+private struct GlassCapsule: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.glassEffect(.regular, in: Capsule())
+        } else {
+            content.background(.thinMaterial, in: Capsule())
+        }
+    }
+}
+
 struct PickerView: View {
     static let cell: CGFloat = 40
     static let width = CGFloat(PickerModel.cols) * cell + 24
-    static let height: CGFloat = 460
+    static let height: CGFloat = 480
     private static let columns = Array(repeating: GridItem(.fixed(cell), spacing: 0), count: PickerModel.cols)
     /// Scroll id of a section header: same `Pos` type as the cells, at an index no cell uses.
     private static let headerIndex = -1
@@ -128,39 +155,42 @@ struct PickerView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            TextField("Search emoji", text: $model.query)
-                .textFieldStyle(.plain)
-                .font(.title3)
-                .padding(12)
-                .focused($focused)
-                .onSubmit { pick() }
-                .onKeyPress(.upArrow) { model.moveVertically(by: -1); return .handled }
-                .onKeyPress(.downArrow) { model.moveVertically(by: 1); return .handled }
-                .onKeyPress(.leftArrow) { model.moveHorizontally(by: -1); return .handled }
-                .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
-                .onKeyPress(.escape) { model.onDismiss(); return .handled }
-            Divider()
-            scrollArea
-        }
-        .frame(width: Self.width, height: Self.height)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.separator))
-        .onAppear { focused = true }
-        .onChange(of: model.focusToken) { focused = true }
-        .onChange(of: model.query) { model.refresh() }
+        scrollArea
+            .frame(width: Self.width, height: Self.height)
+            .modifier(PanelBackground())
+            .onAppear { focused = true }
+            .onChange(of: model.focusToken) { focused = true }
+            .onChange(of: model.query) { model.refresh() }
     }
 
+    private var searchBar: some View {
+        TextField("Search emoji", text: $model.query)
+            .textFieldStyle(.plain)
+            .font(.title3)
+            .focused($focused)
+            .onSubmit { pick() }
+            .onKeyPress(.upArrow) { model.moveVertically(by: -1); return .handled }
+            .onKeyPress(.downArrow) { model.moveVertically(by: 1); return .handled }
+            .onKeyPress(.leftArrow) { model.moveHorizontally(by: -1); return .handled }
+            .onKeyPress(.rightArrow) { model.moveHorizontally(by: 1); return .handled }
+            .onKeyPress(.escape) { model.onDismiss(); return .handled }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .modifier(GlassCapsule())
+            .padding([.horizontal, .top], 10)
+    }
+
+    /// The grid fills the panel and scrolls under the floating search bar and footer.
     private var scrollArea: some View {
         ScrollViewReader { proxy in
-            VStack(spacing: 0) {
-                grid.onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
-                if model.query.isEmpty {  // search results are one flat section: nothing to jump between
-                    Divider()
-                    footer(proxy)
+            grid
+                .onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
+                .safeAreaInset(edge: .top, spacing: 0) { searchBar }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if model.query.isEmpty {  // search results are one flat section: nothing to jump between
+                        footer(proxy)
+                    }
                 }
-            }
         }
     }
 
@@ -202,14 +232,16 @@ struct PickerView: View {
                         .font(.system(size: 16))
                         .frame(maxWidth: .infinity, minHeight: 32)
                         .background(model.pos.section == section ? Color.accentColor.opacity(0.35) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 6))
-                        .contentShape(Rectangle())
+                                    in: Capsule())
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .help(group.name)
             }
         }
-        .padding(.horizontal, 6)
+        .padding(4)
+        .modifier(GlassCapsule())
+        .padding([.horizontal, .bottom], 10)
     }
 
     private func cell(_ emoji: Emoji, at position: Pos) -> some View {
