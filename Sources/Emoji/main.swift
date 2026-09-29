@@ -31,6 +31,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private let picker = PickerController()
     private let showPickerItem = NSMenuItem(title: "Show Picker", action: #selector(showPicker), keyEquivalent: "")
+    private static let hideIconKey = "hideMenuBarIcon"
+
+    private let statusIconItem = NSMenuItem(title: "Show Menu Bar Icon",
+                                            action: #selector(toggleStatusIcon),
+                                            keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Launch at Login",
                                        action: #selector(toggleLaunchAtLogin),
                                        keyEquivalent: "")
@@ -51,7 +56,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.title = Variant.isDev ? "🛠️" : "😀"
         statusItem.menu = makeMenu()
+        statusItem.isVisible = !UserDefaults.standard.bool(forKey: Self.hideIconKey)
         picker.menu = statusItem.menu
+    }
+
+    /// Relaunching the app (Finder, Spotlight) opens the picker: the way back in when the icon is
+    /// hidden and the shortcut is cleared.
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+        picker.show()
+        return false
     }
 
     private func makeMenu() -> NSMenu {
@@ -81,6 +94,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         shortcutMenu.addItem(withTitle: "Clear", action: #selector(clearShortcut), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Shortcut", action: nil, keyEquivalent: "").submenu = shortcutMenu
 
+        statusIconItem.target = self
+        menu.addItem(statusIconItem)
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(.separator())
@@ -90,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_: NSMenu) {
         showPickerItem.isHidden = picker.isVisible  // this menu is also the picker's gear menu
+        statusIconItem.state = statusItem.isVisible ? .on : .off
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         for item in skinMenu.items { item.state = item.tag == SkinTone.current ? .on : .off }
 
@@ -115,6 +131,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func clearShortcut() {
         KeyboardShortcuts.setShortcut(nil, for: .toggle)
+    }
+
+    @objc private func toggleStatusIcon() {
+        statusItem.isVisible.toggle()
+        UserDefaults.standard.set(!statusItem.isVisible, forKey: Self.hideIconKey)
     }
 
     @objc private func toggleLaunchAtLogin() {
