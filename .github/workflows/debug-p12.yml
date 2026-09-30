@@ -10,14 +10,19 @@ jobs:
     steps:
       - name: Inspect secrets
         run: |
-          echo "password length: ${#P12_PASSWORD}"
-          echo "base64 length: ${#P12_BASE64}"
+          echo "password fingerprint: $(printf %s "$P12_PASSWORD" | shasum -a 256 | cut -c1-8)"
           echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          echo "decoded: $(shasum -a 256 "$RUNNER_TEMP/cert.p12" | cut -d' ' -f1)  size: $(wc -c < "$RUNNER_TEMP/cert.p12")"
-          echo "--- openssl (password check):"
-          openssl version
-          openssl pkcs12 -legacy -in "$RUNNER_TEMP/cert.p12" -passin env:P12_PASSWORD -info -noout 2>&1 | head -6 || true
-          echo "--- security import into temp keychain:"
+          echo "--- openssl legacy, unfiltered:"
+          openssl pkcs12 -legacy -in "$RUNNER_TEMP/cert.p12" -passin env:P12_PASSWORD -info -noout 2>&1 | head -12 || true
+          echo "--- openssl without -legacy:"
+          openssl pkcs12 -in "$RUNNER_TEMP/cert.p12" -passin env:P12_PASSWORD -info -noout 2>&1 | head -6 || true
+          echo "--- import original:"
           KC="$RUNNER_TEMP/t.keychain-db"; security create-keychain -p x "$KC"; security unlock-keychain -p x "$KC"
           security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC" 2>&1 || true
-          sw_vers -productVersion
+          echo "--- re-encode with modern algorithms and import:"
+          openssl pkcs12 -legacy -in "$RUNNER_TEMP/cert.p12" -passin env:P12_PASSWORD -nodes -out "$RUNNER_TEMP/all.pem" 2>&1 | head -3 || true
+          MP=modernpass
+          openssl pkcs12 -export -in "$RUNNER_TEMP/all.pem" -passout pass:$MP -out "$RUNNER_TEMP/modern.p12" 2>&1 | head -3 || true
+          security import "$RUNNER_TEMP/modern.p12" -P "$MP" -A -t cert -f pkcs12 -k "$KC" 2>&1 || true
+          security find-identity -p codesigning "$KC" 2>&1 | head -5
+          rm -f "$RUNNER_TEMP/all.pem"
