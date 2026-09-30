@@ -38,9 +38,9 @@ kbd.keycap {
   border-radius: 12px; font-weight: 700; text-decoration: none;
 }
 .dl-btn svg { width: 18px; height: 18px; flex: none; }
-.main { position: relative; overflow: hidden; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.main { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .main::before {
-  content: ''; position: absolute; top: 0; left: -10%; right: -10%; height: 480px;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 480px;
   background: radial-gradient(circle at 20% 30%, #ff5fa2 0%, transparent 55%),
               radial-gradient(circle at 75% 15%, #ffb03b 0%, transparent 50%),
               radial-gradient(circle at 15% 80%, #29d6ae 0%, transparent 50%),
@@ -72,13 +72,13 @@ footer {
 }
 footer a { color: #55525f; text-decoration: none; }
 footer a:hover { text-decoration: underline; }
-.footer-icons { display: flex; align-items: center; gap: 16px; }
-.footer-icons a { display: flex; color: #9c9aa4; }
+.footer-icons { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
+.footer-icons a { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: #9c9aa4; }
 .footer-icons a:hover { color: #55525f; }
 .brand { font-size: 11px; }
 @media (max-width: 640px) {
   .features { grid-template-columns: 1fr; }
-  .hero { padding: 64px 28px 56px; }
+  .hero-inner { padding: 64px 28px 56px; }
   h1 { font-size: 32px; }
 }
 </style>
