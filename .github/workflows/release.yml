@@ -54,5 +54,16 @@ jobs:
           rm "$RUNNER_TEMP/AuthKey.p8"
 
       # --generate-notes is only a starting point (commit/PR list): rewrite it into user-facing highlights.
+      # Safe to re-run: an existing draft just gets its DMG replaced (notes are kept); a published release
+      # is never touched.
       - name: Create draft release
-        run: gh release create "$TAG" "Emoji-${TAG#v}.dmg" --draft --generate-notes
+        run: |
+          DMG="Emoji-${TAG#v}.dmg"
+          if ! IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            gh release create "$TAG" "$DMG" --draft --generate-notes
+          elif [ "$IS_DRAFT" = true ]; then
+            gh release upload "$TAG" "$DMG" --clobber
+          else
+            echo "error: $TAG is already published; delete that release to rebuild it" >&2
+            exit 1
+          fi

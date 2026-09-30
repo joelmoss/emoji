@@ -97,6 +97,9 @@ if [ "${NOTARIZE:-}" = 1 ]; then
   # shellcheck disable=SC2086 # NOTARY_ARGS is deliberately word-split
   notarize() { xcrun notarytool submit "$1" ${NOTARY_ARGS:---keychain-profile emoji} --wait --timeout 30m; }
   WORK=$(mktemp -d)
+  # Any exit, including a failure midway: detach the image if it is still mounted and drop the app copies.
+  # `|| true`: on success it is already detached, and under set -e a failing detach would skip the rm and fail the build.
+  trap 'hdiutil detach "$WORK/mnt" -force -quiet 2>/dev/null || true; rm -rf "$WORK"' EXIT
 
   # 1. App first, so the copy inside the DMG carries its own stapled ticket and launches offline.
   ditto -c -k --keepParent "$APP" "$WORK/$NAME.zip"
@@ -124,7 +127,6 @@ if [ "${NOTARIZE:-}" = 1 ]; then
   xcrun stapler staple "$DMG"
   xcrun stapler validate "$DMG"
   spctl -a -vv -t open --context context:primary-signature "$DMG"
-  rm -rf "$WORK"
   echo "Notarized and stapled: $DMG"
 fi
 

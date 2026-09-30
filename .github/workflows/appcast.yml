@@ -41,6 +41,23 @@ jobs:
             gh release view "$TAG" --json body --jq .body > "${dmg%.dmg}.md"
           done
 
+      # The appcast signature is what tells every installed app to trust this DMG, so refuse to sign one that
+      # is not the notarized build of this tag (e.g. a DMG attached to the release by hand).
+      - name: Verify the DMG
+        run: |
+          set -e
+          [ "$(ls updates/Emoji-*.dmg | wc -l)" -eq 1 ] || { echo "error: expected exactly one Emoji-*.dmg on $TAG" >&2; exit 1; }
+          DMG=$(ls updates/Emoji-*.dmg)
+          xcrun stapler validate "$DMG"
+          spctl -a -vv -t open --context context:primary-signature "$DMG"
+          MOUNT=$(mktemp -d)
+          hdiutil attach "$DMG" -mountpoint "$MOUNT" -nobrowse -readonly -quiet
+          APP_VERSION=$(plutil -extract CFBundleShortVersionString raw "$MOUNT/Emoji.app/Contents/Info.plist")
+          codesign --verify --deep --strict "$MOUNT/Emoji.app"
+          xcrun stapler validate "$MOUNT/Emoji.app"
+          hdiutil detach "$MOUNT" -quiet
+          [ "$APP_VERSION" = "${TAG#v}" ] || { echo "error: $DMG holds Emoji $APP_VERSION but the release is $TAG" >&2; exit 1; }
+
       # generate_appcast keeps only the newest item, which is all Sparkle needs.
       - name: Sign appcast
         env:
