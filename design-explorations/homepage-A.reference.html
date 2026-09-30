@@ -1,0 +1,83 @@
+<!--
+  Frozen reference — chosen variant (A: icon-hero) from homepage.html, 2026-09-30.
+  Parity source of truth for design-explorations/homepage.html Variant A.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emoji — reference (Variant A)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; line-height: 1.5;
+}
+kbd.keycap {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 24px; padding: 0 5px; border-radius: 6px;
+  background: #fff; border: 1px solid #d7d5cf; box-shadow: 0 1px 0 #d7d5cf;
+  font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; color: #333;
+}
+.dl-btn {
+  display: inline-flex; align-items: center; gap: 10px; border: none; cursor: pointer;
+  border-radius: 12px; font-weight: 700; text-decoration: none;
+}
+.dl-btn svg { width: 18px; height: 18px; flex: none; }
+.va-wrap { background: #fbfaf7; }
+.va-hero { position: relative; padding: 96px 64px 80px; text-align: center; overflow: hidden; }
+.va-hero::before {
+  content: ''; position: absolute; inset: -30% -10% auto -10%; height: 480px;
+  background: radial-gradient(circle at 20% 30%, #ff5fa2 0%, transparent 55%),
+              radial-gradient(circle at 75% 15%, #ffb03b 0%, transparent 50%),
+              radial-gradient(circle at 15% 80%, #29d6ae 0%, transparent 50%),
+              radial-gradient(circle at 85% 75%, #3b7bff 0%, transparent 55%);
+  filter: blur(60px) saturate(120%); opacity: .35;
+}
+.va-icon { position: relative; width: 132px; height: 132px; margin: 0 auto 28px; }
+.va-icon img { width: 100%; height: 100%; display: block; }
+.va-h1 { position: relative; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 44px; letter-spacing: -.02em; margin: 0 0 14px; color: #1a1a24; }
+.va-sub { position: relative; font-size: 17px; color: #55525f; max-width: 480px; margin: 0 auto 32px; }
+.va-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 36px; }
+.va-dl { position: relative; background: #1a1a24; color: #fff; padding: 14px 28px; font-size: 15px; }
+.va-dl:hover { background: #000; }
+.va-meta { position: relative; display: block; font-size: 12px; color: #9c9aa4; margin-top: 14px; }
+.va-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #ecebe4; }
+.va-feat { background: #fff; padding: 28px 26px; }
+.va-feat .emoji { font-size: 22px; display: block; margin-bottom: 10px; }
+.va-feat h4 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #1a1a24; }
+.va-feat p { margin: 0; font-size: 13.5px; color: #6b6875; line-height: 1.5; }
+@media (max-width: 640px) {
+  .va-features { grid-template-columns: 1fr; }
+  .va-hero { padding: 64px 28px 56px; }
+  .va-h1 { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+  <div class="va-wrap">
+    <div class="va-hero">
+      <div class="va-icon"><img src="../assets/icon/AppIcon.svg" alt="Emoji app icon" /></div>
+      <h1 class="va-h1">A small, but mighty emoji picker</h1>
+      <p class="va-sub">Press a shortcut, search or browse, and it's pasted right where you were typing. Nothing to switch to.</p>
+      <div class="va-shortcut"><kbd class="keycap">⌥</kbd><kbd class="keycap">⇧</kbd><kbd class="keycap">Space</kbd></div>
+      <br/>
+      <a class="dl-btn va-dl" href="#">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm.5 4v6.1l3-3 1 1-4.5 4.5L7.5 10l1-1 3 3V6h1z"/></svg>
+        Download for macOS
+      </a>
+      <span class="va-meta">v1.0.1 · macOS 14+ · Signed &amp; notarized</span>
+    </div>
+    <div class="va-features">
+      <div class="va-feat"><span class="emoji">⌨️</span><h4>Keyboard first</h4><p>Arrow keys move through the grid, Return inserts, Esc closes.</p></div>
+      <div class="va-feat"><span class="emoji">🔍</span><h4>Search by keyword</h4><p>"sao tome" finds 🇸🇹. Matches word-starts, ignores case and accents.</p></div>
+      <div class="va-feat"><span class="emoji">⚡</span><h4>Instant, every time</h4><p>No launch delay, no lag. Press the shortcut and it's just there — pasted right where you were typing.</p></div>
+    </div>
+  </div>
+</body>
+</html>

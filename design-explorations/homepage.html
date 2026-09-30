@@ -1,0 +1,421 @@
+<!--
+  Homepage design exploration — Emoji (macOS menu-bar emoji picker)
+  Source: README.md, assets/icon/AppIcon.png, GitHub releases (joelmoss/emoji)
+  Date: 2026-09-30
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emoji homepage — four directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --brand-50: #ecebf2;
+  --brand-100: #d8d6e4;
+  --brand-300: #807ea0;
+  --brand-500: #3b3a52;
+  --brand-700: #26263a;
+  --accent-50: #eef6f5;
+  --accent-500: #4f9d97;
+  --accent-700: #3a7771;
+  --ink: #1a1a24;
+  --ink-soft: #4a4a5a;
+  --ink-mute: #7a7a8a;
+  --line: #e6e4dc;
+  --line-soft: #efeee7;
+  --paper: #ffffff;
+  --bg: #f7f6f1;
+  --shadow-sm: 0 1px 2px rgba(20,16,70,.04), 0 1px 1px rgba(20,16,70,.02);
+  --shadow-md: 0 4px 24px -8px rgba(20,16,70,.08), 0 2px 4px rgba(20,16,70,.03);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+.page { max-width: 1320px; margin: 0 auto; padding: 72px 48px 160px; }
+.doc-header { border-bottom: 1px solid var(--line); padding-bottom: 40px; margin-bottom: 80px; }
+.doc-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--brand-500); background: var(--brand-50); padding: 6px 12px; border-radius: 999px; margin-bottom: 20px;
+}
+.doc-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--brand-500); }
+.doc-title { font-family: 'Fraunces', Georgia, serif; font-size: 56px; line-height: 1.05; font-weight: 500; letter-spacing: -.02em; margin: 0 0 16px; color: var(--ink); }
+.doc-subtitle { font-size: 19px; color: var(--ink-soft); max-width: 720px; margin: 0 0 32px; line-height: 1.45; }
+.doc-meta { display: flex; flex-wrap: wrap; gap: 24px; font-size: 13px; color: var(--ink-mute); }
+.doc-meta > div { display: flex; gap: 6px; }
+.doc-meta b { color: var(--ink-soft); font-weight: 600; }
+.variant { margin-bottom: 96px; }
+.variant:last-child { margin-bottom: 0; }
+.variant-head { display: grid; grid-template-columns: 64px 1fr; gap: 20px; align-items: start; margin-bottom: 28px; }
+.variant-letter {
+  width: 48px; height: 48px; border-radius: 999px; background: var(--ink); color: #fff;
+  font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 22px;
+  display: flex; align-items: center; justify-content: center; letter-spacing: -.02em;
+}
+.variant-meta h2 { margin: 4px 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -.015em; color: var(--ink); }
+.variant-tradeoff { font-size: 15px; color: var(--ink-soft); margin: 0; max-width: 760px; }
+.variant-tradeoff b { color: var(--brand-500); font-weight: 600; }
+.preview-frame {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-md);
+  overflow: hidden; margin-left: 84px; position: relative;
+}
+.preview-frame::before {
+  content: ''; position: absolute; top: 14px; left: 16px; width: 10px; height: 10px; border-radius: 999px;
+  background: #f0e9e0; box-shadow: 18px 0 0 #f0e9e0, 36px 0 0 #f0e9e0; z-index: 2;
+}
+.preview-frame-bar {
+  background: #faf9f5; border-bottom: 1px solid var(--line-soft); padding: 14px 16px 14px 76px;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-mute); font-weight: 600;
+}
+.preview { padding: 0; min-height: 200px; }
+.variant-analysis { margin: 24px 0 0 84px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.analysis-block { padding: 18px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.analysis-block h4 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-500); }
+.analysis-block.is-risk h4 { color: #b8341f; }
+.analysis-block.is-pick h4 { color: var(--accent-700); }
+.analysis-block p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
+.decision { margin-top: 120px; padding: 40px 48px; background: var(--ink); color: #fff; border-radius: 20px; }
+.decision h3 { font-family: 'Fraunces', Georgia, serif; font-size: 28px; font-weight: 500; letter-spacing: -.01em; margin: 0 0 8px; }
+.decision-sub { color: rgba(255,255,255,.65); font-size: 14px; margin: 0 0 28px; }
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.decision-cell b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-100); margin-bottom: 6px; font-weight: 600; }
+.decision-cell span { font-size: 15px; color: rgba(255,255,255,.85); line-height: 1.45; }
+@media (max-width: 900px) {
+  .page { padding: 40px 20px 80px; }
+  .doc-title { font-size: 36px; }
+  .variant-head { grid-template-columns: 48px 1fr; gap: 12px; }
+  .preview-frame { margin-left: 0; }
+  .variant-analysis { margin-left: 0; grid-template-columns: 1fr; }
+}
+
+/* ============ shared mock bits ============ */
+.mac-menubar {
+  height: 26px; background: rgba(255,255,255,.7); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,.08); display: flex; align-items: center;
+  justify-content: flex-end; padding: 0 14px; gap: 10px; font-size: 13px; color: #333;
+}
+.mac-menubar .mb-icon { opacity: .8; }
+kbd.keycap {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 24px; padding: 0 5px; border-radius: 6px;
+  background: #fff; border: 1px solid #d7d5cf; box-shadow: 0 1px 0 #d7d5cf;
+  font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; color: #333;
+}
+.dl-btn {
+  display: inline-flex; align-items: center; gap: 10px; border: none; cursor: pointer;
+  border-radius: 12px; font-weight: 700; text-decoration: none;
+}
+.dl-btn svg { width: 18px; height: 18px; flex: none; }
+
+/* ============ Variant A: icon-hero ============ */
+.va-wrap { background: #fbfaf7; }
+.va-hero {
+  position: relative; padding: 96px 64px 80px; text-align: center; overflow: hidden;
+}
+.va-hero::before {
+  content: ''; position: absolute; inset: -30% -10% auto -10%; height: 480px;
+  background: radial-gradient(circle at 20% 30%, #ff5fa2 0%, transparent 55%),
+              radial-gradient(circle at 75% 15%, #ffb03b 0%, transparent 50%),
+              radial-gradient(circle at 15% 80%, #29d6ae 0%, transparent 50%),
+              radial-gradient(circle at 85% 75%, #3b7bff 0%, transparent 55%);
+  filter: blur(60px) saturate(120%); opacity: .35;
+}
+.va-icon { position: relative; width: 132px; height: 132px; margin: 0 auto 28px; }
+.va-icon img { width: 100%; height: 100%; display: block; }
+.va-h1 {
+  position: relative; font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+  font-size: 44px; letter-spacing: -.02em; margin: 0 0 14px; color: #1a1a24;
+}
+.va-sub { position: relative; font-size: 17px; color: #55525f; max-width: 480px; margin: 0 auto 32px; }
+.va-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 36px; }
+.va-dl {
+  position: relative; background: #1a1a24; color: #fff; padding: 14px 28px; font-size: 15px;
+}
+.va-dl:hover { background: #000; }
+.va-meta { position: relative; display: block; font-size: 12px; color: #9c9aa4; margin-top: 14px; }
+.va-features {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #ecebe4;
+}
+.va-feat { background: #fff; padding: 28px 26px; }
+.va-feat .emoji { font-size: 22px; display: block; margin-bottom: 10px; }
+.va-feat h4 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #1a1a24; }
+.va-feat p { margin: 0; font-size: 13.5px; color: #6b6875; line-height: 1.5; }
+
+/* ============ Variant B: feature-grid (dev-tool) ============ */
+.vb-wrap { background: #17171d; color: #e8e7ee; font-family: 'JetBrains Mono', monospace; }
+.vb-top { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2a34; }
+.vb-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+.vb-brand .dot { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg,#ff5fa2,#ffb03b,#29d6ae,#3b7bff); }
+.vb-nav { display: flex; gap: 22px; font-size: 12.5px; color: #8b899a; }
+.vb-hero { padding: 56px 40px 40px; }
+.vb-tag { font-size: 11px; color: #29d6ae; margin-bottom: 14px; letter-spacing: .04em; }
+.vb-tag::before { content: '$ '; color: #57556a; }
+.vb-h1 { font-family: -apple-system, sans-serif; font-size: 38px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 14px; max-width: 560px; line-height: 1.15; }
+.vb-h1 em { font-style: normal; color: #29d6ae; }
+.vb-sub { font-family: -apple-system, sans-serif; font-size: 15.5px; color: #a6a4b3; max-width: 520px; margin: 0 0 28px; line-height: 1.6; }
+.vb-cta-row { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+.vb-dl { background: #29d6ae; color: #10231d; padding: 12px 22px; font-size: 13.5px; font-family: -apple-system, sans-serif; }
+.vb-dl:hover { background: #4ee6c1; }
+.vb-ver { font-size: 12px; color: #6f6d80; }
+.vb-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #2a2a34;
+}
+.vb-cell { padding: 24px 22px; border-right: 1px solid #2a2a34; border-bottom: 1px solid #2a2a34; }
+.vb-cell:nth-child(4n) { border-right: none; }
+.vb-cell b { display: block; font-family: -apple-system, sans-serif; font-size: 13.5px; font-weight: 700; color: #e8e7ee; margin-bottom: 6px; }
+.vb-cell span { font-size: 11.5px; color: #7c7a8c; line-height: 1.6; font-family: -apple-system, sans-serif; }
+.vb-cell .kc { color: #ffb03b; }
+
+/* ============ Variant C: live-demo ============ */
+.vc-wrap { background: linear-gradient(180deg, #f3f0ff 0%, #fbfaf7 320px); }
+.vc-top { padding: 22px 48px 0; display: flex; align-items: center; justify-content: space-between; }
+.vc-brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14px; color: #2a2735; }
+.vc-brand .dot { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg,#ff5fa2,#ffb03b,#29d6ae,#3b7bff); }
+.vc-dl-sm { background: #2a2735; color: #fff; padding: 8px 16px; font-size: 12.5px; }
+.vc-hero-text { text-align: center; padding: 30px 24px 8px; }
+.vc-h1 { font-family: 'Fraunces', Georgia, serif; font-size: 34px; font-weight: 500; letter-spacing: -.015em; margin: 0 0 10px; color: #211f2b; }
+.vc-sub { font-size: 15px; color: #625f6d; margin: 0 0 4px; }
+.vc-stage { padding: 20px 48px 48px; display: flex; justify-content: center; }
+.vc-picker {
+  width: 460px; border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.72);
+  backdrop-filter: blur(24px); box-shadow: 0 30px 60px -20px rgba(40,20,80,.28), 0 0 0 1px rgba(255,255,255,.6) inset;
+}
+.vc-search { padding: 14px 16px 10px; display: flex; align-items: center; gap: 8px; }
+.vc-search input {
+  flex: 1; border: none; background: rgba(0,0,0,.05); border-radius: 9px; padding: 8px 10px;
+  font-size: 13.5px; color: #333; font-family: -apple-system, sans-serif;
+}
+.vc-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 4px 12px 10px; }
+.vc-emoji-grid span { font-size: 22px; text-align: center; padding: 6px 0; border-radius: 8px; }
+.vc-emoji-grid span.sel { background: rgba(59,123,255,.18); }
+.vc-cats { display: flex; gap: 2px; padding: 8px 10px; border-top: 1px solid rgba(0,0,0,.06); justify-content: space-between; }
+.vc-cats span { font-size: 15px; padding: 4px 8px; border-radius: 7px; opacity: .55; }
+.vc-cats span.on { opacity: 1; background: rgba(0,0,0,.06); }
+.vc-callout {
+  position: absolute; background: #1a1a24; color: #fff; font-size: 11.5px; padding: 6px 10px;
+  border-radius: 8px; font-family: -apple-system, sans-serif; font-weight: 600;
+}
+.vc-callout::after { content: ''; position: absolute; width: 8px; height: 8px; background: #1a1a24; transform: rotate(45deg); }
+.vc-strip { display: flex; justify-content: center; gap: 40px; padding: 0 48px 56px; flex-wrap: wrap; }
+.vc-strip div { text-align: center; max-width: 150px; }
+.vc-strip .ic { font-size: 20px; margin-bottom: 8px; }
+.vc-strip b { display: block; font-size: 13px; color: #2a2735; margin-bottom: 3px; }
+.vc-strip span { font-size: 12px; color: #7c798a; line-height: 1.5; }
+
+/* ============ Variant D: ultra-minimal ============ */
+.vd-wrap {
+  background: #0d0d10; color: #f2f1f5; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 90px 40px;
+}
+.vd-icon {
+  width: 84px; height: 84px; border-radius: 20px; margin-bottom: 26px;
+  background: radial-gradient(circle at 25% 20%, #ff5fa2 0%, transparent 55%),
+              radial-gradient(circle at 80% 10%, #ffb03b 0%, transparent 50%),
+              radial-gradient(circle at 10% 85%, #29d6ae 0%, transparent 55%),
+              radial-gradient(circle at 90% 90%, #3b7bff 0%, transparent 55%), #222;
+}
+.vd-h1 { font-family: -apple-system, sans-serif; font-size: 26px; font-weight: 700; margin: 0 0 10px; letter-spacing: -.01em; }
+.vd-sub { font-size: 14.5px; color: #a3a1ab; margin: 0 0 30px; max-width: 320px; }
+.vd-dl {
+  background: #fff; color: #0d0d10; padding: 13px 26px; font-size: 14px; margin-bottom: 18px;
+}
+.vd-dl:hover { background: #e9e8ee; }
+.vd-links { display: flex; gap: 18px; font-size: 12.5px; }
+.vd-links a { color: #85818f; text-decoration: none; border-bottom: 1px solid #38363f; }
+</style>
+</head>
+<body>
+<main class="page">
+
+<header class="doc-header">
+  <div class="doc-eyebrow">Design exploration</div>
+  <h1 class="doc-title">Emoji — homepage directions</h1>
+  <p class="doc-subtitle">Four one-page marketing/download sites for the macOS menu-bar emoji picker, for GitHub Pages. Same copy and features throughout — only structure, density and tone change.</p>
+  <div class="doc-meta">
+    <div><b>Source</b> README.md, assets/icon/AppIcon.png</div>
+    <div><b>Repo</b> joelmoss/emoji</div>
+    <div><b>Generated</b> 2026-09-30</div>
+    <div><b>Variants</b> 4</div>
+  </div>
+</header>
+
+<!-- ===== VARIANT A: icon-hero ===== -->
+<section class="variant">
+  <div class="variant-head">
+    <div class="variant-letter">A</div>
+    <div class="variant-meta">
+      <h2>Icon-hero</h2>
+      <p class="variant-tradeoff"><b>Optimizes for</b> calm, App-Store-like first impression, letting the app icon's gradient carry the color <b>· Tradeoff</b> lowest information density — you scroll past three feature tiles and that's the whole pitch</p>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="preview-frame-bar">Variant A · preview</div>
+    <div class="preview va-wrap">
+      <div class="va-hero">
+        <div class="va-icon"><img src="../assets/icon/AppIcon.svg" alt="Emoji app icon" /></div>
+        <h1 class="va-h1">A small, but mighty emoji picker</h1>
+        <p class="va-sub">Press a shortcut, search or browse, and it's pasted right where you were typing. Nothing to switch to.</p>
+        <div class="va-shortcut"><kbd class="keycap">⌥</kbd><kbd class="keycap">⇧</kbd><kbd class="keycap">Space</kbd></div>
+        <br/>
+        <a class="dl-btn va-dl" href="#">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm.5 4v6.1l3-3 1 1-4.5 4.5L7.5 10l1-1 3 3V6h1z"/></svg>
+          Download for macOS
+        </a>
+        <span class="va-meta">v1.0.1 · macOS 14+ · Signed &amp; notarized</span>
+      </div>
+      <div class="va-features">
+        <div class="va-feat"><span class="emoji">⌨️</span><h4>Keyboard first</h4><p>Arrow keys move through the grid, Return inserts, Esc closes.</p></div>
+        <div class="va-feat"><span class="emoji">🔍</span><h4>Search by keyword</h4><p>"sao tome" finds 🇸🇹. Matches word-starts, ignores case and accents.</p></div>
+        <div class="va-feat"><span class="emoji">⚡</span><h4>Instant, every time</h4><p>No launch delay, no lag. Press the shortcut and it's just there — pasted right where you were typing.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="variant-analysis">
+    <div class="analysis-block"><h4>What works</h4><p>Reuses the actual app icon's colors as the only decoration — feels native to the product with zero extra design work, and reads instantly as a polished Mac app.</p></div>
+    <div class="analysis-block is-risk"><h4>What risks</h4><p>Says the least about what makes this app different from macOS's built-in emoji picker (⌃⌘Space) — a skeptical visitor might not scroll to find out.</p></div>
+    <div class="analysis-block is-pick"><h4>Pick this if</h4><p>You want the page to feel like an extension of the app icon and trust the README/GitHub for anyone who wants depth.</p></div>
+  </div>
+</section>
+
+<!-- ===== VARIANT B: feature-grid (dev-tool) ===== -->
+<section class="variant">
+  <div class="variant-head">
+    <div class="variant-letter">B</div>
+    <div class="variant-meta">
+      <h2>Feature-grid, dev-tool tone</h2>
+      <p class="variant-tradeoff"><b>Optimizes for</b> the audience this actually has today — developers on Hacker News / GitHub who want the spec sheet <b>· Tradeoff</b> dark, monospace, terminal-flavored — less "friendly consumer app," more "tool a dev built for devs"</p>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="preview-frame-bar">Variant B · preview</div>
+    <div class="preview vb-wrap">
+      <div class="vb-top">
+        <div class="vb-brand"><div class="dot"></div>emoji</div>
+        <div class="vb-nav"><span>Features</span><span>Changelog</span><span>GitHub</span></div>
+      </div>
+      <div class="vb-hero">
+        <div class="vb-tag">brew install --cask emoji</div>
+        <h1 class="vb-h1">A menu-bar emoji picker that <em>types</em> for you</h1>
+        <p class="vb-sub">Global shortcut, 1,900+ emoji, fuzzy search, skin tones, recents. Pastes at your cursor and puts your clipboard back — no focus stolen, no app switch.</p>
+        <div class="vb-cta-row">
+          <a class="dl-btn vb-dl" href="#">Download .dmg</a>
+          <span class="vb-ver">v1.0.1 · 4.1 MB · signed &amp; notarized</span>
+        </div>
+      </div>
+      <div class="vb-grid">
+        <div class="vb-cell"><b>Global shortcut</b><span><span class="kc">⌥⇧Space</span> by default, fully remappable.</span></div>
+        <div class="vb-cell"><b>Search</b><span>Word-prefix match on name + CLDR keywords, accent-folded.</span></div>
+        <div class="vb-cell"><b>Recents</b><span>Most-used emoji float to the top automatically.</span></div>
+        <div class="vb-cell"><b>Skin tones</b><span>One global setting applies to every applicable emoji.</span></div>
+        <div class="vb-cell"><b>Launch at login</b><span>Set once in the menu, survives updates.</span></div>
+        <div class="vb-cell"><b>Auto-update</b><span>Sparkle-powered, with a real changelog per release.</span></div>
+        <div class="vb-cell"><b>Native rendering</b><span>Liquid Glass on macOS 26+, blurred material before.</span></div>
+        <div class="vb-cell"><b>Open source</b><span>Swift Package, no Xcode project, MIT-licensed.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="variant-analysis">
+    <div class="analysis-block"><h4>What works</h4><p>Speaks fluently to the exact crowd that finds this on GitHub — precise, technical, no marketing fluff, and the spec-sheet grid answers "what exactly does it do" in one glance.</p></div>
+    <div class="analysis-block is-risk"><h4>What risks</h4><p>Dark + monospace can read as "made for developers only" and undersell it to a less technical Mac user who'd genuinely like a nicer emoji picker.</p></div>
+    <div class="analysis-block is-pick"><h4>Pick this if</h4><p>You're fine with (or want) a niche, technical audience and like that tone yourself.</p></div>
+  </div>
+</section>
+
+<!-- ===== VARIANT C: live-demo ===== -->
+<section class="variant">
+  <div class="variant-head">
+    <div class="variant-letter">C</div>
+    <div class="variant-meta">
+      <h2>Live-demo centerpiece</h2>
+      <p class="variant-tradeoff"><b>Optimizes for</b> showing, not telling — a big mock of the actual picker UI sits front and center, so visitors see the product before reading a word <b>· Tradeoff</b> most build effort, and a static mock can't fully capture the real feel (recommend swapping in a real screen recording once you have one)</p>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="preview-frame-bar">Variant C · preview</div>
+    <div class="preview vc-wrap">
+      <div class="vc-top">
+        <div class="vc-brand"><div class="dot"></div>Emoji</div>
+        <a class="dl-btn vc-dl-sm" href="#">Download</a>
+      </div>
+      <div class="vc-hero-text">
+        <h1 class="vc-h1">Every emoji, one shortcut away</h1>
+        <p class="vc-sub">Search, browse by category, or grab a recent — then it's pasted right where you were typing.</p>
+      </div>
+      <div class="vc-stage">
+        <div class="vc-picker">
+          <div class="vc-search"><input placeholder="Search emoji…" readonly /></div>
+          <div class="vc-emoji-grid">
+            <span>😀</span><span>😂</span><span class="sel">🥹</span><span>😍</span><span>🤔</span><span>😴</span><span>🙌</span><span>👍</span>
+            <span>🎉</span><span>❤️</span><span>🔥</span><span>✨</span><span>🍕</span><span>☕️</span><span>🐶</span><span>🌈</span>
+          </div>
+          <div class="vc-cats">
+            <span class="on">🕒</span><span>😀</span><span>🐶</span><span>🍕</span><span>⚽️</span><span>🚗</span><span>💡</span><span>🚩</span>
+          </div>
+        </div>
+      </div>
+      <div class="vc-strip">
+        <div><div class="ic">⌨️</div><b>Keyboard first</b><span>Arrows move, Return inserts, Esc closes.</span></div>
+        <div><div class="ic">👋</div><b>Never steals focus</b><span>Your app stays in front the whole time.</span></div>
+        <div><div class="ic">🖐️</div><b>Skin tones</b><span>One setting, applied everywhere.</span></div>
+        <div><div class="ic">🔄</div><b>Auto-updates</b><span>Sparkle, with real release notes.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="variant-analysis">
+    <div class="analysis-block"><h4>What works</h4><p>The picker mock instantly answers "what is this" without reading copy — for a visual product like an emoji grid, showing it beats describing it.</p></div>
+    <div class="analysis-block is-risk"><h4>What risks</h4><p>Most effort to build well and to keep in sync with the real UI as it evolves (glass blur, grid layout, category bar) — a stale-looking mock undercuts the "polished" impression.</p></div>
+    <div class="analysis-block is-pick"><h4>Pick this if</h4><p>You're willing to eventually swap the mock for a real screen recording/GIF of the actual app — this direction is built to hold one.</p></div>
+  </div>
+</section>
+
+<!-- ===== VARIANT D: ultra-minimal ===== -->
+<section class="variant">
+  <div class="variant-head">
+    <div class="variant-letter">D</div>
+    <div class="variant-meta">
+      <h2>Ultra-minimal, single viewport</h2>
+      <p class="variant-tradeoff"><b>Optimizes for</b> the fastest possible "get it" — icon, one line, one button, no scrolling at all <b>· Tradeoff</b> says almost nothing about the feature set; relies entirely on the README/GitHub for anyone who wants more</p>
+    </div>
+  </div>
+  <div class="preview-frame">
+    <div class="preview-frame-bar">Variant D · preview</div>
+    <div class="preview vd-wrap">
+      <div class="vd-icon"></div>
+      <h1 class="vd-h1">Emoji, pasted instantly</h1>
+      <p class="vd-sub">A menu-bar picker for macOS. One shortcut, search, done.</p>
+      <a class="dl-btn vd-dl" href="#">Download for macOS · v1.0.1</a>
+      <div class="vd-links"><a href="#">README</a><a href="#">Source</a><a href="#">Releases</a></div>
+    </div>
+  </div>
+  <div class="variant-analysis">
+    <div class="analysis-block"><h4>What works</h4><p>Zero decisions to make, zero scrolling — for a tiny, single-purpose utility this matches the product's own philosophy of getting out of your way.</p></div>
+    <div class="analysis-block is-risk"><h4>What risks</h4><p>No room to mention skin tones, recents, keyboard nav, or auto-updates — a visitor comparing against the built-in macOS picker has nothing here to tip the decision.</p></div>
+    <div class="analysis-block is-pick"><h4>Pick this if</h4><p>You want the GitHub repo itself (README) to be the real documentation, and the homepage to be pure "get the file."</p></div>
+  </div>
+</section>
+
+<section class="decision">
+  <h3>How to pick a direction</h3>
+  <p class="decision-sub">A one-line rubric for choosing one of these to take forward.</p>
+  <div class="decision-grid">
+    <div class="decision-cell"><b>Want it to feel like a polished consumer Mac app →</b><span>A — Icon-hero</span></div>
+    <div class="decision-cell"><b>Want to speak to the GitHub/dev crowd directly →</b><span>B — Feature-grid</span></div>
+    <div class="decision-cell"><b>Want the product to sell itself visually →</b><span>C — Live-demo</span></div>
+    <div class="decision-cell"><b>Want the smallest page that just gets people the .dmg →</b><span>D — Ultra-minimal</span></div>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
