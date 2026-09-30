@@ -48,6 +48,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusIconItem = NSMenuItem(title: "Show Menu Bar Icon",
                                             action: #selector(toggleStatusIcon),
                                             keyEquivalent: "")
+    private let autoUpdateItem = NSMenuItem(title: "Check for Updates Automatically",
+                                            action: #selector(toggleAutoUpdates),
+                                            keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Launch at Login",
                                        action: #selector(toggleLaunchAtLogin),
                                        keyEquivalent: "")
@@ -124,6 +127,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if Variant.updatesEnabled {
             menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
                 .target = self
+            autoUpdateItem.target = self
+            menu.addItem(autoUpdateItem)
         }
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
@@ -132,6 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_: NSMenu) {
         showPickerItem.isHidden = picker.isVisible  // this menu is also the picker's gear menu
         statusIconItem.state = statusItem.isVisible ? .on : .off
+        autoUpdateItem.state = updater.updater.automaticallyChecksForUpdates ? .on : .off
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         for item in skinMenu.items { item.state = item.tag == SkinTone.current ? .on : .off }
         for item in iconMenu.items { item.state = item.tag == selectedIcon ? .on : .off }
@@ -197,6 +203,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             NSAlert(error: error).runModal()
         }
+    }
+
+    @objc private func toggleAutoUpdates() {
+        updater.updater.automaticallyChecksForUpdates.toggle()
     }
 
     @objc private func checkForUpdates() {

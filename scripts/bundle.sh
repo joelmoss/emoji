@@ -29,7 +29,8 @@ if [ "$1" = release ]; then
   PUBKEY=$(cat scripts/sparkle_public_key.txt 2>/dev/null || true)
   if [ -n "$PUBKEY" ]; then
     SPARKLE_KEYS="<key>SUFeedURL</key><string>https://github.com/joelmoss/emoji/releases/latest/download/appcast.xml</string>
-  <key>SUPublicEDKey</key><string>$PUBKEY</string>"
+  <key>SUPublicEDKey</key><string>$PUBKEY</string>
+  <key>SUEnableAutomaticChecks</key><true/>"
   elif [ "${NOTARIZE:-}" = 1 ]; then
     echo "scripts/sparkle_public_key.txt is missing: run generate_keys first (see README)" >&2
     exit 1
