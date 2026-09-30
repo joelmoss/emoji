@@ -64,8 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var recorderWindow: NSWindow?
 
     func applicationDidFinishLaunching(_: Notification) {
+        let smokeTest = ProcessInfo.processInfo.environment["EMOJI_SMOKE_TEST"] != nil
         // Accessibility is required to post ⌘V into other apps. Prompts once.
-        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        if !smokeTest { _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary) }
 
         KeyboardShortcuts.onKeyDown(for: .toggle) { [picker] in picker.toggle() }
 
@@ -74,6 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = makeMenu()
         statusItem.isVisible = !UserDefaults.standard.bool(forKey: Self.hideIconKey)
         picker.menu = statusItem.menu
+
+        // scripts/bundle.sh launches the built app with this set: exiting 0 here proves startup, which builds the
+        // whole menu, didn't crash. The release workflow relies on it.
+        if smokeTest { exit(0) }
     }
 
     /// Relaunching the app (Finder, Spotlight) opens the picker: the way back in when the icon is

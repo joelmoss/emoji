@@ -37,8 +37,14 @@ if [ "$1" = release ]; then
   fi
 fi
 
-swift build -c "$CONFIG" --disable-sandbox
-BIN=$(swift build -c "$CONFIG" --show-bin-path)
+# swiftbuild everywhere: older toolchains' default backend generates a resource-bundle lookup that only checks
+# the .app root and the build machine's own .build path, so the app aborts on launch on any other Mac.
+swift build -c "$CONFIG" --build-system swiftbuild --disable-sandbox
+BIN=$(swift build -c "$CONFIG" --build-system swiftbuild --show-bin-path)
+if strings -a "$BIN/Emoji" | grep -q "/\.build/.*\.bundle"; then
+  echo "error: binary hardcodes a .build resource path (old SwiftPM lookup); it would crash outside this machine" >&2
+  exit 1
+fi
 
 APP="$NAME.app"
 rm -rf "$APP"
@@ -78,6 +84,12 @@ for item in "$SPARKLE/Versions/B/Autoupdate" "$SPARKLE/Versions/B/Updater.app" "
   # shellcheck disable=SC2086 # FLAGS is deliberately word-split
   codesign --force --sign "$SIGN" $FLAGS "$item"
 done
+
+# Launch it once: exits 0 when applicationDidFinishLaunching completes. Skipped for ad-hoc builds, whose
+# hardened runtime refuses to load the equally ad-hoc Sparkle.framework.
+if [ "$SIGN" != "-" ]; then
+  EMOJI_SMOKE_TEST=1 "$APP/Contents/MacOS/$NAME" || { echo "error: $APP crashed on launch (exit $?)" >&2; exit 1; }
+fi
 
 if [ "${NOTARIZE:-}" = 1 ]; then
   # shellcheck disable=SC2086 # NOTARY_ARGS is deliberately word-split
