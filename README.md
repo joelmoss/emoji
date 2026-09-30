@@ -19,14 +19,22 @@ the builds are signed with a stable identity. `SIGN_ID=-` signs ad-hoc instead.
 
 ## Release
 
-Releases are notarized and self-update through [Sparkle](https://sparkle-project.org). Push a tag and CI does the rest:
+Releases are notarized and self-update through [Sparkle](https://sparkle-project.org). The GitHub release page is
+the source of truth: what its notes say is what the update dialog shows.
 
 ```
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-The workflow builds, signs, notarizes and staples `Emoji.app`, then publishes `Emoji-0.1.0.zip` and a signed
-`appcast.xml` to the GitHub release. The app reads the feed from `releases/latest/download/appcast.xml`.
+1. **Tag** → the `Release` workflow builds, signs, notarizes and staples `Emoji.app`, and creates a **draft**
+   release with `Emoji-0.1.0.zip` and auto-generated notes.
+2. **Edit the draft's notes** on GitHub: rewrite the generated commit list into a few user-facing highlights
+   (what changed for someone using the app, not how). Markdown is fine.
+3. **Publish** → the `Appcast` workflow builds a signed `appcast.xml` from the release (its zip and its notes) and
+   attaches it. The app reads it from `releases/latest/download/appcast.xml`.
+
+Publish from the GitHub UI, or with `gh release edit v0.1.0 --draft=false`. Publishing a draft that has empty
+notes fails the workflow on purpose: the update dialog would have nothing to show.
 
 ### One-time setup
 
@@ -56,9 +64,9 @@ xcrun notarytool store-credentials emoji --apple-id YOU@EXAMPLE.COM --team-id B8
 | `DEVELOPER_ID_P12_PASSWORD` | the password you chose on export |
 | `NOTARY_KEY_P8_BASE64` | App Store Connect API key (`AuthKey_XXXX.p8`), `base64 -i AuthKey_XXXX.p8` |
 | `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID` | from the same page in App Store Connect |
-| `SPARKLE_PRIVATE_KEY` | step 1 |
+| `SPARKLE_PRIVATE_KEY` | step 1 (used by the `Appcast` workflow) |
 
-Set each with `gh secret set NAME < file` (or `--body`). A failed release run publishes nothing: fix it, delete the
+Set each with `gh secret set NAME < file` (or `--body`). A failed release run creates nothing: fix it, delete the
 tag (`git push --delete origin v0.1.0 && git tag -d v0.1.0`) and push it again.
 
 The build number (`CFBundleVersion`) is the commit count, which is what Sparkle compares, so it only ever goes up.

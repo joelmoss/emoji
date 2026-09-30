@@ -1,0 +1,59 @@
+name: Appcast
+
+# Runs when a release is published (a draft made by release.yml, after its notes have been edited).
+# Builds the Sparkle feed from the release itself: the zip it carries and the notes on its page, so the
+# update dialog shows exactly what the GitHub release says. The app reads
+# .../releases/latest/download/appcast.xml. Needs the repository secret SPARKLE_PRIVATE_KEY.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  appcast:
+    runs-on: macos-26
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Fetches Sparkle at the version pinned in Package.resolved, which includes its command-line tools.
+      - name: Get Sparkle tools
+        run: swift package resolve
+
+      - name: Fetch zip and release notes
+        run: |
+          mkdir updates
+          gh release download "$TAG" --pattern 'Emoji-*.zip' --dir updates
+          # Same basename as the zip: generate_appcast embeds it as the update's release notes.
+          # Written to a file, never interpolated into a shell command.
+          for zip in updates/Emoji-*.zip; do
+            gh release view "$TAG" --json body --jq .body > "${zip%.zip}.md"
+          done
+
+      # generate_appcast keeps only the newest item, which is all Sparkle needs.
+      - name: Sign appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          echo "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
+            --ed-key-file - \
+            --embed-release-notes \
+            --download-url-prefix "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/" \
+            --full-release-notes-url "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG" \
+            updates
+          # generate_appcast only warns, and skips signing, when the key doesn't match the app's SUPublicEDKey.
+          grep -q 'sparkle:edSignature' updates/appcast.xml || {
+            echo "appcast is unsigned: SPARKLE_PRIVATE_KEY does not match scripts/sparkle_public_key.txt" >&2
+            exit 1
+          }
+          grep -q '<description' updates/appcast.xml || {
+            echo "appcast has no release notes: the release body is empty" >&2
+            exit 1
+          }
+
+      - name: Attach appcast
+        run: gh release upload "$TAG" updates/appcast.xml --clobber
