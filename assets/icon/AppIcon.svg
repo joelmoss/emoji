@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs>
+<clipPath id="sq"><rect x="100" y="100" width="824" height="824" rx="185" ry="185"/></clipPath>
+<filter id="shadow" x="-15%" y="-10%" width="130%" height="140%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity=".30"/></filter>
+<linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".25"/></linearGradient>
+<linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+
+<linearGradient id="d-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#241552"/><stop offset="1" stop-color="#0F1C4D"/></linearGradient>
+<filter id="d-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="62"/></filter>
+<linearGradient id="d-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".15"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient>
+<radialGradient id="d-fill" cx=".35" cy=".25" r="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="#fff" stop-opacity=".06"/></radialGradient>
+</defs><g filter="url(#shadow)"><rect x="100" y="100" width="824" height="824" rx="185" ry="185" fill="url(#d-bg)"/></g><g clip-path="url(#sq)"><g filter="url(#d-blur)"><circle cx="330" cy="330" r="250" fill="#FF4FA3"/><circle cx="730" cy="320" r="230" fill="#FFB02E"/><circle cx="320" cy="730" r="260" fill="#2EE6C5"/><circle cx="730" cy="730" r="250" fill="#4C7DFF"/></g><circle cx="512" cy="512" r="300" fill="url(#d-fill)"/><circle cx="512" cy="512" r="296" fill="none" stroke="url(#d-rim)" stroke-width="10"/><circle cx="430" cy="470" r="32" fill="#fff"/><circle cx="594" cy="470" r="32" fill="#fff"/><path d="M388 566 Q512 684 636 566" stroke="#fff" stroke-width="42" stroke-linecap="round" fill="none"/><rect x="100" y="100" width="824" height="420" fill="url(#gloss)"/></g><rect x="104" y="104" width="816" height="816" rx="181" ry="181" fill="none" stroke="url(#edge)" stroke-width="6"/></svg>

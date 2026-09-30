@@ -51,6 +51,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Emoji" "$APP/Contents/MacOS/$NAME"
 cp Sources/Emoji/emojis.json "$APP/Contents/Resources/"
+cp assets/icon/AppIcon.icns "$APP/Contents/Resources/"  # regenerate with scripts/gen_icon.sh
 # SwiftPM's Bundle.module looks in Contents/Resources first. Not the .app root: codesign rejects that.
 # KeyboardShortcuts' Recorder needs its bundle.
 cp -R "$BIN/KeyboardShortcuts_KeyboardShortcuts.bundle" "$APP/Contents/Resources/"
@@ -71,6 +72,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
   <key>CFBundleName</key><string>$NAME</string>
   <key>CFBundleExecutable</key><string>$NAME</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$BUILD</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
@@ -103,13 +105,20 @@ if [ "${NOTARIZE:-}" = 1 ]; then
   xcrun stapler validate "$APP"
   spctl -a -vv -t exec "$APP"
 
-  # 2. DMG: the app plus an Applications shortcut to drag it onto.
+  # 2. DMG: the app plus an Applications shortcut to drag it onto, and the app icon as the volume icon.
+  # The custom-icon flag doesn't survive `hdiutil create -srcfolder`, so build a writable image, set the
+  # flag on the mounted volume, then convert to the compressed read-only DMG.
   DMG="$NAME-$VERSION.dmg"
   rm -f "$DMG"
-  mkdir "$WORK/dmg"
+  mkdir "$WORK/dmg" "$WORK/mnt"
   ditto "$APP" "$WORK/dmg/$APP"
   ln -s /Applications "$WORK/dmg/Applications"
-  hdiutil create -volname "$NAME" -srcfolder "$WORK/dmg" -format UDZO -ov "$DMG" >/dev/null
+  cp assets/icon/AppIcon.icns "$WORK/dmg/.VolumeIcon.icns"
+  hdiutil create -volname "$NAME" -srcfolder "$WORK/dmg" -format UDRW -ov "$WORK/rw.dmg" >/dev/null
+  hdiutil attach "$WORK/rw.dmg" -mountpoint "$WORK/mnt" -nobrowse -quiet
+  SetFile -a C "$WORK/mnt"
+  hdiutil detach "$WORK/mnt" -quiet || { sleep 3; hdiutil detach "$WORK/mnt" -force -quiet; }
+  hdiutil convert "$WORK/rw.dmg" -format UDZO -o "$DMG" >/dev/null
   codesign --force --sign "$SIGN" --timestamp "$DMG"
   notarize "$DMG"
   xcrun stapler staple "$DMG"
