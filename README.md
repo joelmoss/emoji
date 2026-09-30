@@ -8,6 +8,23 @@
 
 Needs macOS 14+. Liquid Glass on macOS 26+.
 
+## Features
+
+- **Global shortcut.** ⌥⇧Space opens the picker from anywhere. Pick another preset from the menu or record your own.
+- **Types into what you were using.** The picker never takes focus from your app: choose an emoji and it is pasted at the cursor, and your clipboard is put back afterwards. It closes on Esc or a click elsewhere.
+- **Every emoji, by category.** All 1,900+ emoji from the Unicode emoji list, with a bar along the bottom to jump between categories.
+- **Recently used first.** The emoji you pick most recently sit at the top.
+- **Search by name or keyword.** "happy" finds 😀 and "sao tome" finds 🇸🇹. It matches the start of words and ignores case and accents.
+- **Keyboard first.** Arrow keys move through the grid and across categories, Return inserts, Esc closes.
+- **Skin tones.** One setting applies to every emoji that has skin-tone variants.
+- **Menu-bar icon your way.** Choose from six icons or hide it. The gear button in the picker opens the same menu.
+- **Launch at login.**
+- **Automatic updates.** Updates arrive through Sparkle with release notes in the update window, and you can check by hand from the menu.
+- **Native look.** Liquid Glass on macOS 26 and later, a blurred material before that.
+- **Signed and notarized**, so it opens without a Gatekeeper warning.
+
+Pasting sends ⌘V, so macOS asks for Accessibility access the first time. Without it the emoji is left on your clipboard for you to paste.
+
 ## Develop
 
 ```
