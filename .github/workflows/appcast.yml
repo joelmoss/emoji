@@ -1,7 +1,7 @@
 name: Appcast
 
 # Runs when a release is published (a draft made by release.yml, after its notes have been edited).
-# Builds the Sparkle feed from the release itself: the zip it carries and the notes on its page, so the
+# Builds the Sparkle feed from the release itself: the DMG it carries and the notes on its page, so the
 # update dialog shows exactly what the GitHub release says. The app reads
 # .../releases/latest/download/appcast.xml. Needs the repository secret SPARKLE_PRIVATE_KEY.
 on:
@@ -24,14 +24,14 @@ jobs:
       - name: Get Sparkle tools
         run: swift package resolve
 
-      - name: Fetch zip and release notes
+      - name: Fetch DMG and release notes
         run: |
           mkdir updates
-          gh release download "$TAG" --pattern 'Emoji-*.zip' --dir updates
-          # Same basename as the zip: generate_appcast embeds it as the update's release notes.
+          gh release download "$TAG" --pattern 'Emoji-*.dmg' --dir updates
+          # Same basename as the DMG: generate_appcast embeds it as the update's release notes.
           # Written to a file, never interpolated into a shell command.
-          for zip in updates/Emoji-*.zip; do
-            gh release view "$TAG" --json body --jq .body > "${zip%.zip}.md"
+          for dmg in updates/Emoji-*.dmg; do
+            gh release view "$TAG" --json body --jq .body > "${dmg%.dmg}.md"
           done
 
       # generate_appcast keeps only the newest item, which is all Sparkle needs.

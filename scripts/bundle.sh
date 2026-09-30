@@ -4,7 +4,8 @@
 #   release  release build -> "Emoji.app",     com.joelmoss.emoji,     Developer ID signature + hardened runtime
 # SIGN_ID overrides the identity; SIGN_ID=- signs ad-hoc (Accessibility then resets on every rebuild).
 # VERSION (default 0.1.0) and BUILD (default: commit count, must only ever go up) set the bundle versions.
-# NOTARIZE=1 (release only) submits to Apple, staples the ticket and writes Emoji-$VERSION.zip. Auth is the
+# NOTARIZE=1 (release only) notarizes and staples the app, then builds, signs, notarizes and staples
+# Emoji-$VERSION.dmg (the release artifact; Sparkle updates from it too). Auth is the
 # keychain profile "emoji" (xcrun notarytool store-credentials emoji ...), or set NOTARY_ARGS, e.g.
 # NOTARY_ARGS="--key AuthKey.p8 --key-id ID --issuer ISSUER" in CI.
 set -e
@@ -78,17 +79,31 @@ for item in "$SPARKLE/Versions/B/Autoupdate" "$SPARKLE/Versions/B/Updater.app" "
 done
 
 if [ "${NOTARIZE:-}" = 1 ]; then
-  WORK=$(mktemp -d)
-  ditto -c -k --keepParent "$APP" "$WORK/$NAME.zip"
   # shellcheck disable=SC2086 # NOTARY_ARGS is deliberately word-split
-  xcrun notarytool submit "$WORK/$NAME.zip" ${NOTARY_ARGS:---keychain-profile emoji} --wait --timeout 30m
-  rm -rf "$WORK"
+  notarize() { xcrun notarytool submit "$1" ${NOTARY_ARGS:---keychain-profile emoji} --wait --timeout 30m; }
+  WORK=$(mktemp -d)
+
+  # 1. App first, so the copy inside the DMG carries its own stapled ticket and launches offline.
+  ditto -c -k --keepParent "$APP" "$WORK/$NAME.zip"
+  notarize "$WORK/$NAME.zip"
   xcrun stapler staple "$APP"
   xcrun stapler validate "$APP"
   spctl -a -vv -t exec "$APP"
-  # Zip after stapling: a zip made before it ships without the ticket.
-  ditto -c -k --keepParent "$APP" "$NAME-$VERSION.zip"
-  echo "Notarized and stapled: $NAME-$VERSION.zip"
+
+  # 2. DMG: the app plus an Applications shortcut to drag it onto.
+  DMG="$NAME-$VERSION.dmg"
+  rm -f "$DMG"
+  mkdir "$WORK/dmg"
+  ditto "$APP" "$WORK/dmg/$APP"
+  ln -s /Applications "$WORK/dmg/Applications"
+  hdiutil create -volname "$NAME" -srcfolder "$WORK/dmg" -format UDZO -ov "$DMG" >/dev/null
+  codesign --force --sign "$SIGN" --timestamp "$DMG"
+  notarize "$DMG"
+  xcrun stapler staple "$DMG"
+  xcrun stapler validate "$DMG"
+  spctl -a -vv -t open --context context:primary-signature "$DMG"
+  rm -rf "$WORK"
+  echo "Notarized and stapled: $DMG"
 fi
 
 echo "Built $APP $VERSION ($BUILD, $CONFIG), signed. Grant Accessibility once (System Settings > Privacy & Security)."

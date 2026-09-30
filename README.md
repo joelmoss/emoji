@@ -27,10 +27,10 @@ git tag v0.1.0 && git push origin v0.1.0
 ```
 
 1. **Tag** → the `Release` workflow builds, signs, notarizes and staples `Emoji.app`, and creates a **draft**
-   release with `Emoji-0.1.0.zip` and auto-generated notes.
+   release with `Emoji-0.1.0.dmg` and auto-generated notes.
 2. **Edit the draft's notes** on GitHub: rewrite the generated commit list into a few user-facing highlights
    (what changed for someone using the app, not how). Markdown is fine.
-3. **Publish** → the `Appcast` workflow builds a signed `appcast.xml` from the release (its zip and its notes) and
+3. **Publish** → the `Appcast` workflow builds a signed `appcast.xml` from the release (its DMG and its notes) and
    attaches it. The app reads it from `releases/latest/download/appcast.xml`.
 
 Publish from the GitHub UI, or with `gh release edit v0.1.0 --draft=false`. Publishing a draft that has empty

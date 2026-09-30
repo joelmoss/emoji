@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag like v0.1.0 to build, sign and notarize Emoji.app and create a DRAFT release with the zip.
+# Push a tag like v0.1.0 to build, sign and notarize Emoji.app and create a DRAFT release with the DMG.
 # Then edit the draft's notes on GitHub (they become the Sparkle update dialog) and publish it:
 # publishing triggers appcast.yml, which adds appcast.xml.
 # A failed run creates nothing: fix, delete the tag, retry.
@@ -55,4 +55,4 @@ jobs:
 
       # --generate-notes is only a starting point (commit/PR list): rewrite it into user-facing highlights.
       - name: Create draft release
-        run: gh release create "$TAG" "Emoji-${TAG#v}.zip" --draft --generate-notes
+        run: gh release create "$TAG" "Emoji-${TAG#v}.dmg" --draft --generate-notes
