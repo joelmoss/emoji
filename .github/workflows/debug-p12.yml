@@ -1,0 +1,23 @@
+name: Debug p12
+# TEMPORARY: delete after diagnosing the release certificate import.
+on: workflow_dispatch
+jobs:
+  debug:
+    runs-on: macos-26
+    env:
+      P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+      P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+    steps:
+      - name: Inspect secrets
+        run: |
+          echo "password length: ${#P12_PASSWORD}"
+          echo "base64 length: ${#P12_BASE64}"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          echo "decoded: $(shasum -a 256 "$RUNNER_TEMP/cert.p12" | cut -d' ' -f1)  size: $(wc -c < "$RUNNER_TEMP/cert.p12")"
+          echo "--- openssl (password check):"
+          openssl version
+          openssl pkcs12 -legacy -in "$RUNNER_TEMP/cert.p12" -passin env:P12_PASSWORD -info -noout 2>&1 | head -6 || true
+          echo "--- security import into temp keychain:"
+          KC="$RUNNER_TEMP/t.keychain-db"; security create-keychain -p x "$KC"; security unlock-keychain -p x "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC" 2>&1 || true
+          sw_vers -productVersion
