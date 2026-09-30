@@ -56,6 +56,9 @@ final class PickerModel {
         if let sections { self.sections = sections } else { refresh() }
     }
 
+    /// A blank query counts as no query: a flat list of every emoji helps no one.
+    var isSearching: Bool { !query.allSatisfy(\.isWhitespace) }
+
     var selected: Emoji? {
         guard sections.indices.contains(pos.section),
               sections[pos.section].emojis.indices.contains(pos.index) else { return nil }
@@ -65,7 +68,7 @@ final class PickerModel {
     func refresh() {
         pos = Pos()
         tone = SkinTone.current
-        if query.isEmpty {
+        if !isSearching {
             let recent = Recents.list.compactMap { EmojiStore.byChar[$0] }
             sections = (recent.isEmpty ? [] : [EmojiGroup(name: "Recently Used", emojis: recent)]) + EmojiStore.groups
         } else {
@@ -201,7 +204,7 @@ struct PickerView: View {
                 .onChange(of: model.pos) { _, newPos in proxy.scrollTo(newPos) }
                 .safeAreaInset(edge: .top, spacing: 0) { searchBar }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if model.query.isEmpty {  // search results are one flat section: nothing to jump between
+                    if !model.isSearching {  // search results are one flat section: nothing to jump between
                         footer(proxy)
                     }
                 }

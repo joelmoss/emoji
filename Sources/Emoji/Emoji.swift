@@ -27,7 +27,7 @@ struct Emoji: Decodable {
 
     /// `tone` 0 is the default; 1…5 picks a skin-tone variant when one exists.
     func char(tone: Int) -> String {
-        guard tone > 0, let tones else { return char }
+        guard let tones, tones.indices.contains(tone - 1) else { return char }
         return tones[tone - 1]
     }
 }

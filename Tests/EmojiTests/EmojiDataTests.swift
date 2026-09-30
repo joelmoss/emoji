@@ -43,9 +43,31 @@ struct EmojiDataTests {
         #expect(grinning.char(tone: 3) == "😀")  // no variants: falls back to the base
     }
 
+    @Test func outOfRangeToneFallsBackToBase() throws {
+        // A stale or hand-edited saved preference must never index past the five variants.
+        let thumbsUp = try #require(EmojiStore.byChar["👍"])
+        #expect(thumbsUp.char(tone: 6) == "👍")
+        #expect(thumbsUp.char(tone: -1) == "👍")
+    }
+
     @Test func skinToneSamples() {
         #expect(SkinTone.sample(0) == "👍")
         #expect(SkinTone.sample(1) == "👍🏻")
         #expect(SkinTone.sample(5) == "👍🏿")
+    }
+}
+
+struct PickerQueryTests {
+    @Test func blankQueryShowsCategoriesNotAFlatResultList() {
+        let picker = PickerModel()
+        picker.query = "   "
+        picker.refresh()
+        #expect(picker.sections.count > 1)
+        #expect(picker.sections.allSatisfy { $0.name != "Results" })
+        #expect(!picker.isSearching)
+        picker.query = " happy "
+        picker.refresh()
+        #expect(picker.isSearching)
+        #expect(picker.sections.map(\.name) == ["Results"])
     }
 }
