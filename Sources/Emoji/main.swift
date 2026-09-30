@@ -13,8 +13,11 @@ enum Variant {
 }
 
 extension KeyboardShortcuts.Name {
-    // Different default so dev and release don't fight over ⌥Space.
-    static let toggle = Self("toggle", default: .init(.space, modifiers: Variant.isDev ? [.option, .shift] : [.option]))
+    // ⌥⇧Space: no macOS shortcut uses it, and launchers (ChatGPT, Raycast, Alfred...) tend to default to plain
+    // ⌥Space. Dev adds ⌃ so the two builds don't fight over the same key.
+    static let toggle = Self("toggle", default: .init(.space, modifiers: Variant.isDev ? devKeys : releaseKeys))
+    private static let releaseKeys: NSEvent.ModifierFlags = [.option, .shift]
+    private static let devKeys: NSEvent.ModifierFlags = [.control, .option, .shift]
 }
 
 /// The recorder needs a real window: a menu's tracking loop swallows the keystrokes it records.
@@ -27,9 +30,9 @@ struct ShortcutRecorderView: View {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    /// Menu presets. ⌘Space, ⌃Space and ⌘⌥Space are taken by macOS itself.
+    /// Menu presets. ⌘Space, ⌃Space, ⌃⌥Space (input sources) and ⌘⌥Space are taken by macOS itself.
     private static let shortcutPresets: [KeyboardShortcuts.Shortcut] = [
-        [.option], [.option, .shift], [.control, .option], [.command, .shift], [.control, .shift]
+        [.option, .shift], [.option], [.command, .shift], [.control, .shift], [.control, .option, .shift]
     ].map { .init(.space, modifiers: $0) }
 
     private let picker = PickerController()
