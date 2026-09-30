@@ -1,6 +1,10 @@
-# Emoji
+<p align="center">
+  <img src="assets/icon/AppIcon.png" width="128" height="128" alt="Emoji app icon">
+</p>
 
-A fast macOS emoji picker. Press ⌥Space (configurable from the menu-bar menu), pick an emoji, and it's pasted into whatever you were typing in.
+<h1 align="center">Emoji</h1>
+
+<p align="center">A fast macOS emoji picker. Press ⌥⇧Space (configurable from the menu-bar menu), pick an emoji, and it's pasted into whatever you were typing in.</p>
 
 Needs macOS 14+. Liquid Glass on macOS 26+.
 
